@@ -1,43 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 
 export default function Configuracion({ medico, onProfileUpdate }) {
-  const [especialidad, setEspecialidad] = useState(medico?.especialidad || '');
-  const [codigoMedico, setCodigoMedico] = useState(medico?.codigo_medico || '');
+  const [nombre, setNombre] = useState('');
+  const [especialidad, setEspecialidad] = useState('');
+  const [codigoMedico, setCodigoMedico] = useState('');
   const [subiendo, setSubiendo] = useState(false);
 
-  const guardarCambios = async (e) => {
-    e.preventDefault();
-    const { error } = await supabase
-      .from('perfiles_medicos')
-      .update({ especialidad, codigo_medico: codigoMedico })
-      .eq('id', medico.id);
-
-    if (!error) {
-      alert("Perfil actualizado correctamente");
-      onProfileUpdate(); // Callback para refrescar los datos en App.jsx
+  // Sincronizar el estado interno cuando los datos del médico carguen
+  useEffect(() => {
+    if (medico) {
+      setNombre(medico.nombre_completo || '');
+      setEspecialidad(medico.especialidad || '');
+      setCodigoMedico(medico.codigo_medico || '');
     }
-  };
+  }, [medico]);
 
-  // Lógica básica para subir avatar al Bucket de Supabase Storage
+const guardarCambios = async (e) => {
+  e.preventDefault();
+  if (!medico?.id) return alert("Sesión inválida.");
+
+  const { error } = await supabase
+    .from('perfiles_medicos')
+    .update({ 
+      nombre_completo: nombre, 
+      especialidad: especialidad, 
+      codigo_medico: codigoMedico 
+    })
+    .eq('id', medico.id);
+
+  if (error) {
+    alert("Error al actualizar perfil: " + error.message);
+  } else {
+    alert("¡Perfil actualizado correctamente!");
+    onProfileUpdate();
+  }
+};
+
   const manejarSubidaFoto = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !medico?.id) return;
     setSubiendo(true);
 
     const fileExt = file.name.split('.').pop();
-    const fileName = `${medico.id}-${Math.random()}.${fileExt}`;
+    const fileName = `${medico.id}-${Date.now()}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
 
+    // 1. Subida al Bucket de Supabase Storage
     let { error: uploadError } = await supabase.storage
       .from('vita-assets')
       .upload(filePath, file);
 
-    if (!uploadError) {
-      const { data } = supabase.storage.from('vita-assets').getPublicUrl(filePath);
-      await supabase.from('perfiles_medicos').update({ avatar_url: data.publicUrl }).eq('id', medico.id);
+    if (uploadError) {
+      alert("Error al subir imagen: " + uploadError.message);
+      setSubiendo(false);
+      return;
+    }
+
+    // 2. Traer la URL Pública generada
+    const { data } = supabase.storage.from('vita-assets').getPublicUrl(filePath);
+
+    // 3. Registrar la URL en la tabla del médico
+    const { error: updateError } = await supabase
+      .from('perfiles_medicos')
+      .update({ avatar_url: data.publicUrl })
+      .eq('id', medico.id);
+
+    if (updateError) {
+      alert("Error al guardar la referencia de la foto: " + updateError.message);
+    } else {
+      alert("¡Foto de perfil actualizada!");
       onProfileUpdate();
-      alert("Foto de perfil actualizada");
     }
     setSubiendo(false);
   };
@@ -50,11 +83,20 @@ export default function Configuracion({ medico, onProfileUpdate }) {
           
           {/* Avatar editable */}
           <div className="flex items-center gap-4 mb-4">
-            <img src={medico?.avatar_url || 'https://via.placeholder.com/150'} alt="Avatar" className="w-16 h-16 rounded-full object-cover border border-slate-200" />
+            <img 
+              src={medico?.avatar_url || 'https://via.placeholder.com/150'} 
+              alt="Avatar" 
+              className="w-16 h-16 rounded-full object-cover border border-slate-200" 
+            />
             <div>
               <input type="file" accept="image/*" disabled={subiendo} onChange={manejarSubidaFoto} className="text-xs text-slate-500" />
-              <p className="text-[10px] text-slate-400 mt-1">Formatos permitidos: JPG, PNG.</p>
+              <p className="text-[10px] text-slate-400 mt-1">Formatos permitidos: JPG, PNG. {subiendo && "(Subiendo...)"}</p>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Nombre Completo</label>
+            <input type="text" required className="w-full p-2 border border-slate-200 rounded-xl" value={nombre} onChange={e => setNombre(e.target.value)} />
           </div>
 
           <div>
@@ -71,7 +113,9 @@ export default function Configuracion({ medico, onProfileUpdate }) {
             ⚠️ Las credenciales de acceso (correo y contraseña) están gestionadas por el administrador de sistemas y no pueden modificarse desde este panel.
           </div>
 
-          <button type="submit" className="w-full bg-sky-600 text-white p-3 rounded-xl font-bold hover:bg-sky-700 transition">Guardar Cambios</button>
+          <button type="submit" disabled={subiendo} className="w-full bg-sky-600 text-white p-3 rounded-xl font-bold hover:bg-sky-700 transition disabled:bg-slate-300">
+            Guardar Cambios
+          </button>
         </form>
       </div>
     </div>
