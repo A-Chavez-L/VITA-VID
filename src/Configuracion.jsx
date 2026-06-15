@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 
-export default function Configuracion({ medico, onProfileUpdate }) {
+export default function Configuracion({ medico, onProfileUpdate, lanzarAlerta }) {
   const [nombre, setNombre] = useState('');
   const [especialidad, setEspecialidad] = useState('');
   const [codigoMedico, setCodigoMedico] = useState('');
@@ -16,26 +16,26 @@ export default function Configuracion({ medico, onProfileUpdate }) {
     }
   }, [medico]);
 
-const guardarCambios = async (e) => {
-  e.preventDefault();
-  if (!medico?.id) return alert("Sesión inválida.");
+  const guardarCambios = async (e) => {
+    e.preventDefault();
+    if (!medico?.id) return lanzarAlerta("Sesión inválida.", "error");
 
-  const { error } = await supabase
-    .from('perfiles_medicos')
-    .update({ 
-      nombre_completo: nombre, 
-      especialidad: especialidad, 
-      codigo_medico: codigoMedico 
-    })
-    .eq('id', medico.id);
+    const { error } = await supabase
+      .from('perfiles_medicos')
+      .update({ 
+        nombre_completo: nombre, 
+        especialidad: especialidad, 
+        codigo_medico: codigoMedico 
+      })
+      .eq('id', medico.id);
 
-  if (error) {
-    alert("Error al actualizar perfil: " + error.message);
-  } else {
-    alert("¡Perfil actualizado correctamente!");
-    onProfileUpdate();
-  }
-};
+    if (error) {
+      lanzarAlerta("Error al actualizar perfil: " + error.message, "error");
+    } else {
+      lanzarAlerta("¡Perfil actualizado correctamente!", "success");
+      onProfileUpdate();
+    }
+  };
 
   const manejarSubidaFoto = async (e) => {
     const file = e.target.files[0];
@@ -52,7 +52,7 @@ const guardarCambios = async (e) => {
       .upload(filePath, file);
 
     if (uploadError) {
-      alert("Error al subir imagen: " + uploadError.message);
+      lanzarAlerta("Error al subir imagen: " + uploadError.message, "error");
       setSubiendo(false);
       return;
     }
@@ -67,9 +67,9 @@ const guardarCambios = async (e) => {
       .eq('id', medico.id);
 
     if (updateError) {
-      alert("Error al guardar la referencia de la foto: " + updateError.message);
+      lanzarAlerta("Error al guardar la referencia de la foto: " + updateError.message, "error");
     } else {
-      alert("¡Foto de perfil actualizada!");
+      lanzarAlerta("¡Foto de perfil actualizada!", "success");
       onProfileUpdate();
     }
     setSubiendo(false);
