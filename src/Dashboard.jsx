@@ -1,18 +1,62 @@
+// src/Dashboard.jsx
 import React, { useState } from 'react';
 import HomeDashboard from './HomeDashboard';
 import ProgramarCitas from './ProgramarCitas';
 import HistorialCitas from './HistorialCitas';
 import Configuracion from './Configuracion';
+import { MeetingProvider } from "@videosdk.live/react-sdk";
+import VideoCallContainer from "./VideoCallContainer";
+import LeaveScreen from "./LeaveScreen";
+import { createMeeting } from "./api";
 
 export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
   const [pestanaActiva, setPestanaActiva] = useState('dashboard');
-  
-  // Estado para controlar las notificaciones globales
   const [toast, setToast] = useState({ mostrar: false, mensaje: '', tipo: 'success' });
+  
+  // Control de estado para la videollamada activa
+  const [llamadaActiva, setLlamadaActiva] = useState({ activa: false, meetingId: null });
+  
+  // 🔄 Nuevo estado: Controla si se muestra la pantalla de despedida dentro del módulo de video
+  const [isMeetingLeft, setIsMeetingLeft] = useState(false);
+
+  const VIDEO_SDK_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiI2ZjgzNzY4MC01OGQxLTQxYWBeODY3MS05NzZjY2YyYmU0YjkiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc4MTc0Mjc3NCwiZXhwIjoxNzgyMzQ3NTc0fQ.zXU5hGeIYnp87JGexBlksKv7xTdQ_y_RnG0YXxYPa1c"; 
 
   const lanzarAlerta = (mensaje, tipo = 'success') => {
     setToast({ mostrar: true, mensaje, tipo });
     setTimeout(() => setToast(prev => ({ ...prev, mostrar: false })), 4000);
+  };
+
+  const obtenerNombreParticipante = () => {
+    if (!medico) return "Usuario VITA";
+    const esDispositivoMovil = /Mobi|Android|iPhone|iPad|Tablet/i.test(navigator.userAgent);
+    if (esDispositivoMovil) {
+      return "Paciente (Tablet)";
+    }
+    return medico.nombre_completo || "Dr. Lester Rugama";
+  };
+
+  const manejarConexionTelemedicina = async () => {
+    lanzarAlerta("Generando canal de telemedicina seguro...", "info");
+    const idSalaReal = await createMeeting();
+    
+    if (idSalaReal) {
+      console.log("➡️ Cambiando estado de Dashboard a sala activa ID:", idSalaReal);
+      // 🚀 Al iniciar una llamada nueva, nos aseguramos de limpiar el estado de salida
+      setIsMeetingLeft(false);
+      setLlamadaActiva({ activa: true, meetingId: idSalaReal });
+      lanzarAlerta("Conexión establecida con éxito.", "success");
+    } else {
+      lanzarAlerta("Error al inicializar la sala. Revisa la vigencia del Token.", "error");
+    }
+  };
+
+  // 🔄 Función manejadora para resetear estados al presionar "Reingresar"
+  const manejarReingresoMeeting = (valor) => {
+    setIsMeetingLeft(valor);
+    if (valor === false) {
+      // Si cambia a false, limpia el ID anterior para forzar al médico a generar un puente limpio al Dashboard
+      setLlamadaActiva({ activa: false, meetingId: null });
+    }
   };
 
   return (
@@ -82,9 +126,34 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
         <div className="flex-1">
           {!medico ? (
             <div className="p-6 text-center text-slate-500">Sincronizando perfil profesional...</div>
+          ) : llamadaActiva.activa ? (
+            /* 🖥️ ORQUESTADOR DE RENDERIZADO CONDICIONAL DE LLAMADA / SALIDA */
+            isMeetingLeft ? (
+              /* 1️⃣ Si el médico colgó, inyectamos la pantalla de salida de forma limpia */
+              <LeaveScreen setIsMeetingLeft={manejarReingresoMeeting} />
+            ) : (
+              /* 2️⃣ Si la llamada está fluyendo normalmente, se renderiza el motor multimedia */
+              <MeetingProvider
+                config={{
+                  meetingId: llamadaActiva.meetingId,
+                  micEnabled: true,
+                  webcamEnabled: true,
+                  name: obtenerNombreParticipante(),
+                }}
+                token={VIDEO_SDK_TOKEN}
+              >
+                <VideoCallContainer onLeave={() => setIsMeetingLeft(true)} />
+              </MeetingProvider>
+            )
           ) : (
             <>
-              {pestanaActiva === 'dashboard' && <HomeDashboard medico={medico} lanzarAlerta={lanzarAlerta} />}
+              {pestanaActiva === 'dashboard' && (
+                <HomeDashboard 
+                  medico={medico} 
+                  lanzarAlerta={lanzarAlerta} 
+                  iniciarLlamada={manejarConexionTelemedicina} 
+                />
+              )}
               {pestanaActiva === 'citas' && <ProgramarCitas medico={medico} lanzarAlerta={lanzarAlerta} />}
               {pestanaActiva === 'historial' && <HistorialCitas medico={medico} lanzarAlerta={lanzarAlerta} />}
               {pestanaActiva === 'config' && <Configuracion medico={medico} onProfileUpdate={refrescarPerfil} lanzarAlerta={lanzarAlerta} />}

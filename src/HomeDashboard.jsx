@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 
-export default function HomeDashboard({ medico, lanzarAlerta }) {
+export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada }) {
   const [citasHoy, setCitasHoy] = useState([]);
   const [filtroModalidad, setFiltroModalidad] = useState('Todas');
   const [totalCompletadas, setTotalCompletadas] = useState(0);
   const [porcentajeEficiencia, setPorcentajeEficiencia] = useState(0);
   const [cargando, setCargando] = useState(true);
-  
-  // Únicamente conservamos el estado para el cuadro modal de confirmación
   const [confirmarCancelacion, setConfirmarCancelacion] = useState({ mostrar: false, citaId: null, pacienteNombre: '' });
 
   const cargarMetricasDashboard = async () => {
@@ -65,6 +63,7 @@ export default function HomeDashboard({ medico, lanzarAlerta }) {
     momentoCita.setHours(horas, minutos, 0, 0);
 
     const diferenciaMinutos = (momentoCita - ahora) / (1000 * 60);
+    // Ventana de tiempo: 10 minutos antes y hasta 45 minutos después
     return diferenciaMinutos <= 10 && diferenciaMinutos >= -45;
   };
 
@@ -94,12 +93,12 @@ export default function HomeDashboard({ medico, lanzarAlerta }) {
   return (
     <div className="p-6 bg-slate-50 min-h-screen space-y-6 relative">
       
-      {/* 🪟 Modal Integrado para Confirmar Cancelación */}
+      {/* Modal para Confirmar Cancelación */}
       {confirmarCancelacion.mostrar && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xl max-w-sm w-full space-y-4 mx-4">
             <h3 className="text-sm font-bold text-slate-800">¿Cancelar Cita Médica?</h3>
-            <p className="text-xs text-slate-400">¿Estás seguro de que deseas cancelar la cita del paciente <span className="font-semibold text-slate-700">{confirmarCancelacion.pacienteNombre}</span>? Esta acción no se puede deshacer.</p>
+            <p className="text-xs text-slate-400">¿Estás seguro de que deseas cancelar la cita del paciente <span className="font-semibold text-slate-700">{confirmarCancelacion.pacienteNombre}</span>?</p>
             <div className="flex justify-end gap-2 text-xs font-bold pt-2">
               <button onClick={() => setConfirmarCancelacion({ mostrar: false, citaId: null, pacienteNombre: '' })} className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-xl transition">Volver</button>
               <button onClick={() => { cambiarEstadoCita(confirmarCancelacion.citaId, 'Cancelada'); setConfirmarCancelacion({ mostrar: false, citaId: null, pacienteNombre: '' }); }} className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-sm transition">Sí, Cancelar</button>
@@ -176,11 +175,11 @@ export default function HomeDashboard({ medico, lanzarAlerta }) {
                 {citasFiltradas.map((cita) => {
                   const inminente = esCitaInminente(cita.hora, cita.modalidad, cita.estado);
                   return (
-                    <tr key={cita.id} className={`transition-all duration-300 ${inminente ? 'bg-sky-50/70 hover:bg-sky-50 animate-pulse border-l-4 border-sky-500' : 'hover:bg-slate-50/50'}`}>
+                    <tr key={cita.id} className={`transition-all duration-300 ${inminente ? 'bg-sky-50/70 hover:bg-sky-50 border-l-4 border-sky-500' : 'hover:bg-slate-50/50'}`}>
                       <td className="py-3 px-1 font-semibold text-sky-600">{cita.hora.slice(0, 5)}</td>
                       <td className="py-3 font-medium text-slate-800">
                         {cita.paciente_nombre} ({cita.paciente_edad} años)
-                        {inminente && <span className="block text-[9px] font-bold text-sky-600 mt-0.5 tracking-wide">🔵 ¡Hora de conectar!</span>}
+                        {inminente && <span className="block text-[9px] font-bold text-sky-600 mt-0.5 tracking-wide">🔵 Consulta lista para iniciar</span>}
                       </td>
                       <td className="py-3 text-slate-500">{cita.tipo_consulta}</td>
                       <td className="py-3">
@@ -192,7 +191,17 @@ export default function HomeDashboard({ medico, lanzarAlerta }) {
                       <td className="py-3 text-center">
                         {cita.estado === 'Pendiente' ? (
                           <div className="flex items-center justify-center gap-1.5">
-                            <button onClick={() => cambiarEstadoCita(cita.id, 'Completada')} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] shadow-sm transition">✅ Completar</button>
+                            {/* 🎥 Si es una consulta virtual e inminente, mostramos el disparador del SDK */}
+                            {inminente ? (
+                              <button 
+                                onClick={() => iniciarLlamada(cita.id)} 
+                                className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] shadow-md transition whitespace-nowrap animate-bounce"
+                              >
+                                🎥 Conectarse
+                              </button>
+                            ) : (
+                              <button onClick={() => cambiarEstadoCita(cita.id, 'Completada')} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] shadow-sm transition">✅ Completar</button>
+                            )}
                             <button onClick={() => setConfirmarCancelacion({ mostrar: true, citaId: cita.id, pacienteNombre: cita.paciente_nombre })} className="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-2.5 py-1 rounded-lg text-[10px] transition">❌ Cancelar</button>
                           </div>
                         ) : (
