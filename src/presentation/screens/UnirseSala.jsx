@@ -4,6 +4,7 @@ import { MeetingProvider } from "@videosdk.live/react-sdk";
 import VideoCallContainer from '../containers/VideoCallContainer';
 import { getToken } from '../../data/api';
 import { citasService } from '../../core/services/citasService';
+import { supabase } from '../../data/supabaseClient';
 
 export default function UnirseSala() {
   // react-router-dom mapea el parámetro exacto según tu App.jsx (:meetingId)
@@ -19,8 +20,11 @@ export default function UnirseSala() {
   const [nombrePaciente, setNombrePaciente] = useState('');
   const [confirmarIngreso, setConfirmarIngreso] = useState(false);
   const [requiereNombreManual, setRequiereNombreManual] = useState(false);
+  const [esperandoMedico, setEsperandoMedico] = useState(false);
 
-useEffect(() => {
+  useEffect(() => {
+    let canalRealtime = null;
+
     const validarYConectar = async () => {
       try {
         console.log("🔍 [VITA] Evaluando parámetro recibido de URL:", meetingId);
@@ -30,33 +34,64 @@ useEffect(() => {
         }
 
         let meetingIdFinal = null;
-
-        // 💡 EL FIX: Verificar si el parámetro de la URL es puramente numérico (ej: "83")
         const esNumeroCita = /^\d+$/.test(meetingId);
 
         if (esNumeroCita) {
           // Caso A: Viene el ID numérico de la cita de Supabase (ej: 83)
           console.log("🔢 Es un ID de cita numérico. Consultando en base de datos...");
           const cita = await citasService.validarAccesoASala(meetingId);
-          console.log("📊 Respuesta de Supabase:", cita);
+          console.log("📊 Respuesta inicial de Supabase:", cita);
 
-          if (cita && cita.meeting_id) {
-            meetingIdFinal = cita.meeting_id;
+          if (cita) {
             if (cita.paciente_nombre) {
               setNombrePaciente(cita.paciente_nombre);
               setRequiereNombreManual(false);
             } else {
               setRequiereNombreManual(true);
             }
+
+            if (cita.meeting_id) {
+              meetingIdFinal = cita.meeting_id;
+            } else {
+              // ⏳ El médico no ha iniciado la videollamada aún. Activamos canal en tiempo real.
+              console.log("⏳ La sala no está lista. Suscribiendo al canal Realtime para la cita:", meetingId);
+              setEsperandoMedico(true);
+              setCargando(false);
+
+              canalRealtime = supabase
+                .channel(`espera-sala-${meetingId}`)
+                .on(
+                  'postgres_changes',
+                  {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'citas',
+                    filter: `id=eq.${meetingId}`,
+                  },
+                  async (payload) => {
+                    console.log("🔄 Actualización de la cita detectada en tiempo real:", payload.new);
+                    if (payload.new && payload.new.meeting_id) {
+                      console.log("🚀 El médico ha iniciado la sala:", payload.new.meeting_id);
+                      
+                      const tokenVideo = await getToken();
+                      setToken(tokenVideo);
+                      setMeetingIdReal(payload.new.meeting_id);
+                      setEsperandoMedico(false);
+                    }
+                  }
+                )
+                .subscribe();
+              
+              return; // Pausamos la ejecución asíncrona hasta recibir el evento
+            }
           } else {
-            throw new Error("El médico aún no ha iniciado esta videollamada desde su panel.");
+            throw new Error("La cita médica especificada no existe en el sistema.");
           }
         } else {
           // Caso B: Viene el código con guiones directo de VideoSDK (ej: tfuy-v1v1-z7hlp)
-          // Evitamos consultar a Supabase por la columna ID numérica para que no explote Postgres
           console.log("🔤 Es un código de sala directo de VideoSDK con guiones.");
           meetingIdFinal = meetingId;
-          setRequiereNombreManual(true); // Le pedimos que escriba su nombre en el lobby
+          setRequiereNombreManual(true);
         }
 
         console.log("🔑 ID de sala final asignado al SDK:", meetingIdFinal);
@@ -69,11 +104,21 @@ useEffect(() => {
         console.error("❌ Error al enlazar sala:", err);
         setError(err.message || "No se pudo conectar de manera segura con el canal de telemedicina.");
       } finally {
-        setCargando(false);
+        if (!canalRealtime) {
+          setCargando(false);
+        }
       }
     };
 
     validarYConectar();
+
+    // 🧹 Limpieza del webhook / WebSocket al desmontar el componente
+    return () => {
+      if (canalRealtime) {
+        console.log("🔌 Desconectando canal Realtime de VITA...");
+        supabase.removeChannel(canalRealtime);
+      }
+    };
   }, [meetingId]);
 
   if (cargando) {
@@ -97,6 +142,36 @@ useEffect(() => {
           <button onClick={() => navigate('/')} className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold px-6 py-2 rounded-xl text-xs transition">
             Volver al inicio
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ⏳ PANTALLA DE ESPERA REACTIVA EN TIEMPO REAL
+  if (esperandoMedico) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white">
+        <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl text-center">
+          <div className="relative flex justify-center mb-4">
+            <div className="animate-ping absolute inline-flex h-12 w-12 rounded-full bg-sky-400 opacity-25"></div>
+            <span className="relative text-4xl">👨‍⚕️</span>
+          </div>
+          <h2 className="text-lg font-black text-slate-200 tracking-tight">Sala de Espera Virtual</h2>
+          <p className="text-xs text-sky-400 mt-1 font-bold tracking-wider uppercase">Cita Registrada #{meetingId}</p>
+          
+          <div className="mt-6 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
+            <p className="text-xs text-slate-400">Paciente:</p>
+            <p className="text-sm font-bold text-slate-300 mt-0.5">{nombrePaciente || "Validando..."}</p>
+          </div>
+
+          <p className="text-xs text-slate-400 mt-6 leading-relaxed">
+            El médico aún no ha iniciado la videollamada. Por favor, permanece en esta pantalla; la consulta se activará de forma automática en cuanto el profesional se conecte.
+          </p>
+          
+          <div className="mt-6 flex items-center justify-center gap-2 text-[11px] font-mono text-slate-500">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Escuchando canal de telemedicina seguro
+          </div>
         </div>
       </div>
     );

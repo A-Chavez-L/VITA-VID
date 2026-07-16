@@ -1,3 +1,4 @@
+// src/core/services/citasService.js
 import { citasRepository } from '../../data/repositories/citasRepository';
 
 export const citasService = {
@@ -23,8 +24,7 @@ export const citasService = {
     
     if (errorConflicto) throw errorConflicto;
     if (conflicto && conflicto.length > 0) {
-      const citaExistente = conflicto[0];
-      throw new Error(`Horario no disponible. Ya hay una cita ${citaExistente.estado === 'Pendiente' ? 'pendiente' : 'completada'} con ${citaExistente.paciente_nombre}.`);
+      throw new Error(`Ya tienes una cita programada a esa hora.`);
     }
 
     const { error } = await citasRepository.insertarCita({
@@ -43,9 +43,29 @@ export const citasService = {
     return true;
   },
 
-  async validarAccesoASala(meetingId) {
-    const { data: cita, error } = await citasRepository.obtenerCitaPorId(meetingId);
+  // 🛡️ Nombre unificado para evitar errores de tipo en las pantallas receptoras
+  async validarAccesoASala(citaId) {
+    if (!citaId) throw new Error("El ID de la cita es requerido.");
+    const citaIdTexto = String(citaId).trim(); 
+    
+    const { data: cita, error } = await citasRepository.obtenerCitaPorId(citaIdTexto);
     if (error) throw error;
     return cita;
+  },
+
+  // ✅ Sincronizado para alternar estados de forma opcional (Pendiente o En progreso)
+  async asociarMeetingACita(citaId, meetingId, nuevoEstado = null) {
+    if (!citaId || !meetingId) throw new Error("Faltan parámetros requeridos.");
+    const { data, error } = await citasRepository.actualizarMeetingId(citaId, meetingId, nuevoEstado);
+    if (error) throw error;
+    return data;
+  },
+
+  // 🔄 Cambia el flujo del estado en el cierre de la teleconsulta
+  async cambiarEstadoCita(citaId, nuevoEstado) {
+    if (!citaId || !nuevoEstado) throw new Error("Faltan parámetros para cambiar el estado.");
+    const { data, error } = await citasRepository.actualizarEstadoCita(citaId, nuevoEstado);
+    if (error) throw error;
+    return data;
   }
 };
