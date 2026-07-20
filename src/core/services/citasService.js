@@ -1,6 +1,8 @@
 // src/core/services/citasService.js
 import { citasRepository } from '../../data/repositories/citasRepository';
 
+const LONGITUD_MAXIMA_NOTA = 2000;
+
 export const citasService = {
   async agendarCitaMedica(medicoId, datosCita) {
     if (!datosCita.paciente_nombre || !datosCita.paciente_edad || !datosCita.fecha || !datosCita.hora) {
@@ -21,7 +23,7 @@ export const citasService = {
 
     const horaFormateada = datosCita.hora + ":00";
     const { data: conflicto, error: errorConflicto } = await citasRepository.buscarConflictos(medicoId, datosCita.fecha, horaFormateada);
-    
+
     if (errorConflicto) throw errorConflicto;
     if (conflicto && conflicto.length > 0) {
       throw new Error(`Ya tienes una cita programada a esa hora.`);
@@ -43,17 +45,17 @@ export const citasService = {
     return true;
   },
 
-  // 🛡️ Nombre unificado para evitar errores de tipo en las pantallas receptoras
+  // Nombre unificado para evitar errores de tipo en las pantallas receptoras
   async validarAccesoASala(citaId) {
     if (!citaId) throw new Error("El ID de la cita es requerido.");
-    const citaIdTexto = String(citaId).trim(); 
-    
+    const citaIdTexto = String(citaId).trim();
+
     const { data: cita, error } = await citasRepository.obtenerCitaPorId(citaIdTexto);
     if (error) throw error;
     return cita;
   },
 
-  // ✅ Sincronizado para alternar estados de forma opcional (Pendiente o En progreso)
+  // Sincronizado para alternar estados de forma opcional (Pendiente o En progreso)
   async asociarMeetingACita(citaId, meetingId, nuevoEstado = null) {
     if (!citaId || !meetingId) throw new Error("Faltan parámetros requeridos.");
     const { data, error } = await citasRepository.actualizarMeetingId(citaId, meetingId, nuevoEstado);
@@ -61,10 +63,24 @@ export const citasService = {
     return data;
   },
 
-  // 🔄 Cambia el flujo del estado en el cierre de la teleconsulta
-  async cambiarEstadoCita(citaId, nuevoEstado) {
+  /**
+   * Cambia el estado de la cita al cierre de la teleconsulta.
+   * Acepta opcionalmente una nota clínica (resumen/indicaciones del médico)
+   * que se registra junto con la resolución.
+   */
+  async cambiarEstadoCita(citaId, nuevoEstado, notaClinica = null) {
     if (!citaId || !nuevoEstado) throw new Error("Faltan parámetros para cambiar el estado.");
-    const { data, error } = await citasRepository.actualizarEstadoCita(citaId, nuevoEstado);
+
+    // Normalización y validación de la nota en la capa de servicio
+    let notaLimpia = null;
+    if (typeof notaClinica === 'string' && notaClinica.trim().length > 0) {
+      notaLimpia = notaClinica.trim();
+      if (notaLimpia.length > LONGITUD_MAXIMA_NOTA) {
+        throw new Error(`La nota clínica no puede superar los ${LONGITUD_MAXIMA_NOTA} caracteres.`);
+      }
+    }
+
+    const { data, error } = await citasRepository.actualizarEstadoCita(citaId, nuevoEstado, notaLimpia);
     if (error) throw error;
     return data;
   }

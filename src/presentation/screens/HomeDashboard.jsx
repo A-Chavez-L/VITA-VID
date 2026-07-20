@@ -1,6 +1,16 @@
 // src/presentation/screens/HomeDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../../data/supabaseClient";
+import {
+  Calendar,
+  CheckCircle2,
+  TrendingUp,
+  Clock,
+  Video,
+  Link2,
+  Check,
+  X,
+} from 'lucide-react';
 
 export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mostrarSoloEnlace }) {
   const [citasHoy, setCitasHoy] = useState([]);
@@ -15,7 +25,7 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
   const cargarMetricasDashboard = async () => {
     if (!medico?.id) return;
     setCargando(true);
-    
+
     const fechaLocal = new Date();
     const hoyLocal = `${fechaLocal.getFullYear()}-${String(fechaLocal.getMonth() + 1).padStart(2, '0')}-${String(fechaLocal.getDate()).padStart(2, '0')}`;
 
@@ -43,7 +53,7 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
         setPorcentajeEficiencia(totalValidas > 0 ? Math.round((completadas / totalValidas) * 100) : 0);
       }
     } catch (err) {
-      console.error("❌ Error cargando métricas:", err);
+      console.error("Error cargando métricas:", err);
     } finally {
       setCargando(false);
     }
@@ -58,7 +68,7 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
     if (error) {
       lanzarAlerta("Error al actualizar la cita: " + error.message, 'error');
     } else {
-      lanzarAlerta(nuevoEstado === 'Completada' ? "🎉 ¡Cita completada con éxito!" : "❌ Cita cancelada correctamente", 'success');
+      lanzarAlerta(nuevoEstado === 'Completada' ? "¡Cita completada con éxito!" : "Cita cancelada correctamente", 'success');
       cargarMetricasDashboard();
     }
   };
@@ -68,7 +78,7 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
 
     const ahora = new Date();
     const [horas, minutos] = horaCita.split(':').map(Number);
-    
+
     const momentoCita = new Date();
     momentoCita.setHours(horas, minutos, 0, 0);
 
@@ -83,7 +93,7 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
 
     // Actualiza el reloj local cada minuto para refrescar la inminencia de las citas
     const intervaloTiempo = setInterval(() => {
-      setMinutoActual(new Date()); 
+      setMinutoActual(new Date());
     }, 60000);
 
     const canalCitas = supabase
@@ -102,28 +112,29 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
   const citasFiltradas = citasHoy.filter(cita => filtroModalidad === 'Todas' ? true : cita.modalidad === filtroModalidad);
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen space-y-6 relative">
-      
+    // El padre (Dashboard) ya controla altura, fondo y scroll: aquí solo padding y espaciado
+    <div className="p-6 space-y-6 relative">
+
       {/* Modal para Confirmar Cancelación */}
       {confirmarCancelacion.mostrar && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xl max-w-sm w-full space-y-4 mx-4 animate-scale-in">
-            <h3 className="text-sm font-bold text-slate-800">¿Cancelar Cita Médica?</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="text-base font-bold text-slate-800">¿Cancelar Cita Médica?</h3>
+            <p className="text-sm text-slate-500">
               ¿Estás seguro de que deseas cancelar la cita del paciente <span className="font-semibold text-slate-700">{confirmarCancelacion.pacienteNombre}</span>?
             </p>
             <div className="flex justify-end gap-2 text-xs font-bold pt-2">
-              <button 
-                onClick={() => setConfirmarCancelacion({ mostrar: false, citaId: null, pacienteNombre: '' })} 
+              <button
+                onClick={() => setConfirmarCancelacion({ mostrar: false, citaId: null, pacienteNombre: '' })}
                 className="px-4 py-2 text-slate-500 hover:bg-slate-50 rounded-xl transition"
               >
                 Volver
               </button>
-              <button 
-                onClick={() => { 
-                  cambiarEstadoCita(confirmarCancelacion.citaId, 'Cancelada'); 
-                  setConfirmarCancelacion({ mostrar: false, citaId: null, pacienteNombre: '' }); 
-                }} 
+              <button
+                onClick={() => {
+                  cambiarEstadoCita(confirmarCancelacion.citaId, 'Cancelada');
+                  setConfirmarCancelacion({ mostrar: false, citaId: null, pacienteNombre: '' });
+                }}
                 className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-sm transition"
               >
                 Sí, Cancelar
@@ -135,32 +146,38 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
 
       {/* Banner de Bienvenida */}
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          Bienvenido, {medico?.nombre_completo || 'Médico'} ✨
+        <h1 className="text-2xl font-bold text-slate-800">
+          Bienvenido, {medico?.nombre_completo || 'Médico'}
         </h1>
-        <p className="text-xs text-slate-400 mt-1">Aquí tienes un resumen de tu actividad médica para el día de hoy.</p>
+        <p className="text-sm text-slate-500 mt-1">Aquí tienes un resumen de tu actividad médica para el día de hoy.</p>
       </div>
 
       {/* Grid de Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-sky-50 text-sky-600 rounded-xl text-xl">📅</div>
+          <div className="p-3 bg-sky-50 text-sky-600 rounded-xl">
+            <Calendar className="w-6 h-6" />
+          </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Citas de Hoy</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Citas de Hoy</p>
             <p className="text-2xl font-black text-slate-800">{citasHoy.length}</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl text-xl">✅</div>
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Completadas</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Completadas</p>
             <p className="text-2xl font-black text-slate-800">{totalCompletadas}</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl text-xl">📈</div>
+          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+            <TrendingUp className="w-6 h-6" />
+          </div>
           <div className="w-full">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tasa de Finalización</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tasa de Finalización</p>
             <div className="flex items-center gap-2">
               <p className="text-2xl font-black text-slate-800">{porcentajeEficiencia}%</p>
               <div className="w-full bg-slate-100 rounded-full h-1.5 max-w-[100px]">
@@ -174,12 +191,15 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
       {/* Listado de Citas */}
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3">
-          <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">🕒 Citas del Día</h2>
-          <div className="flex bg-slate-100 p-1 rounded-xl text-[10px] font-bold text-slate-500">
+          <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-400" />
+            Citas del Día
+          </h2>
+          <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-500">
             {['Todas', 'Virtual', 'Presencial'].map((mod) => (
-              <button 
-                key={mod} 
-                onClick={() => setFiltroModalidad(mod)} 
+              <button
+                key={mod}
+                onClick={() => setFiltroModalidad(mod)}
                 className={`px-3 py-1.5 rounded-lg transition-all ${filtroModalidad === mod ? 'bg-white text-sky-600 shadow-sm' : 'hover:text-slate-800'}`}
               >
                 {mod}
@@ -187,18 +207,18 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
             ))}
           </div>
         </div>
-        
+
         {cargando ? (
-          <p className="text-xs text-slate-400 text-center py-4 animate-pulse">Buscando citas...</p>
+          <p className="text-sm text-slate-500 text-center py-4 animate-pulse">Buscando citas...</p>
         ) : citasFiltradas.length === 0 ? (
-          <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center text-slate-400 text-xs">
-            No hay citas registradas hoy.
+          <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm">
+            No hay citas registradas hoy. Programa una desde la pestaña "Programar Citas".
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-[10px] font-bold text-slate-400 uppercase">
+                <tr className="text-[10px] font-bold text-slate-500 uppercase">
                   <th className="pb-2">Hora</th>
                   <th className="pb-2">Paciente</th>
                   <th className="pb-2">Consulta</th>
@@ -211,20 +231,20 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
                 {citasFiltradas.map((cita) => {
                   const inminente = esCitaInminente(cita.hora, cita.modalidad, cita.estado);
                   const estaActivaOActiva = cita.estado === 'Pendiente' || cita.estado === 'En progreso';
-                  
+
                   return (
-                    <tr 
-                      key={cita.id} 
+                    <tr
+                      key={cita.id}
                       className={`transition-all duration-300 ${inminente ? 'bg-sky-50/70 hover:bg-sky-50 border-l-4 border-sky-500' : 'hover:bg-slate-50/50'}`}
                     >
                       <td className="py-3 px-1 font-semibold text-sky-600">
                         {cita.hora ? cita.hora.slice(0, 5) : '--:--'}
                       </td>
-                      <td className="py-3 font-medium text-slate-800">
+                      <td className="py-3 text-sm font-medium text-slate-800">
                         {cita.paciente_nombre} ({cita.paciente_edad} años)
                         {inminente && (
-                          <span className="block text-[9px] font-bold text-sky-600 mt-0.5 tracking-wide">
-                            {cita.meeting_id ? "🟢 Canal activo" : "🔵 Consulta lista para iniciar"}
+                          <span className="block text-[10px] font-bold text-sky-600 mt-0.5 tracking-wide">
+                            {cita.meeting_id ? "Canal activo" : "Consulta lista para iniciar"}
                           </span>
                         )}
                       </td>
@@ -236,8 +256,8 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
                       </td>
                       <td className="py-3">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          cita.estado === 'Completada' ? 'bg-emerald-50 text-emerald-600' : 
-                          cita.estado === 'Cancelada' ? 'bg-rose-50 text-rose-600' : 
+                          cita.estado === 'Completada' ? 'bg-emerald-50 text-emerald-600' :
+                          cita.estado === 'Cancelada' ? 'bg-rose-50 text-rose-600' :
                           cita.estado === 'En progreso' ? 'bg-sky-50 text-sky-600 animate-pulse' :
                           'bg-amber-50 text-amber-600'
                         }`}>
@@ -247,15 +267,16 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
                       <td className="py-3 px-2 text-center">
                         {estaActivaOActiva ? (
                           <div className="flex items-center justify-center gap-1.5">
-                            
+
                             {/* 1. Botón de Acción Principal Dinámico */}
                             {inminente ? (
-                              <button 
-                                onClick={() => iniciarLlamada(cita.id, cita.paciente_nombre)} 
-                                className={`${cita.meeting_id ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-sky-500 hover:bg-sky-600'} text-white font-bold px-2.5 py-1.5 rounded-lg text-[10px] shadow-sm transition whitespace-nowrap`}
+                              <button
+                                onClick={() => iniciarLlamada(cita.id, cita.paciente_nombre)}
+                                className={`${cita.meeting_id ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-sky-500 hover:bg-sky-600'} text-white font-bold px-2.5 py-1.5 rounded-lg text-[10px] shadow-sm transition whitespace-nowrap inline-flex items-center gap-1`}
                                 title={cita.meeting_id ? "Reingresar a la videollamada" : "Iniciar videollamada"}
                               >
-                                🎥 {cita.meeting_id ? "Reingresar" : "Conectar"}
+                                <Video className="w-3.5 h-3.5" />
+                                {cita.meeting_id ? "Reingresar" : "Conectar"}
                               </button>
                             ) : (
                               <span className="text-[10px] bg-slate-100 text-slate-500 font-medium px-2 py-1 rounded-md border border-slate-200/60 select-none">
@@ -264,40 +285,43 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
                             )}
 
                             {/* 2. Barra Compacta de Herramientas y Estados */}
-                            <div className="flex items-center bg-slate-50 border border-slate-100 p-0.5 rounded-lg shadow-2xs">
+                            <div className="flex items-center bg-slate-50 border border-slate-100 p-0.5 rounded-lg">
                               {/* Compartir Enlace (Solo disponible si es virtual e inminente) */}
                               {inminente && (
-                                <button 
-                                  onClick={() => mostrarSoloEnlace(cita.id, cita.paciente_nombre)} 
-                                  className="hover:bg-emerald-50 text-emerald-600 p-1 rounded-md text-[11px] transition"
+                                <button
+                                  onClick={() => mostrarSoloEnlace(cita.id, cita.paciente_nombre)}
+                                  className="hover:bg-emerald-50 text-emerald-600 p-1.5 rounded-md transition"
                                   title="Compartir enlace con el paciente"
+                                  aria-label="Compartir enlace con el paciente"
                                 >
-                                  🔗
+                                  <Link2 className="w-3.5 h-3.5" />
                                 </button>
                               )}
-                              
+
                               {/* Completar Consulta Rápido */}
-                              <button 
-                                onClick={() => cambiarEstadoCita(cita.id, 'Completada')} 
-                                className="hover:bg-emerald-50 text-emerald-600 font-bold p-1 rounded-md text-[11px] transition" 
+                              <button
+                                onClick={() => cambiarEstadoCita(cita.id, 'Completada')}
+                                className="hover:bg-emerald-50 text-emerald-600 p-1.5 rounded-md transition"
                                 title="Finalizar Consulta (Completada)"
+                                aria-label="Marcar consulta como completada"
                               >
-                                ✓
+                                <Check className="w-3.5 h-3.5" strokeWidth={3} />
                               </button>
 
                               {/* Cancelar Consulta Rápido */}
-                              <button 
-                                onClick={() => setConfirmarCancelacion({ mostrar: true, citaId: cita.id, pacienteNombre: cita.paciente_nombre })} 
-                                className="hover:bg-rose-50 text-rose-600 font-bold p-1 rounded-md text-[11px] transition" 
+                              <button
+                                onClick={() => setConfirmarCancelacion({ mostrar: true, citaId: cita.id, pacienteNombre: cita.paciente_nombre })}
+                                className="hover:bg-rose-50 text-rose-600 p-1.5 rounded-md transition"
                                 title="Cancelar Consulta"
+                                aria-label="Cancelar consulta"
                               >
-                                ✕
+                                <X className="w-3.5 h-3.5" strokeWidth={3} />
                               </button>
                             </div>
 
                           </div>
                         ) : (
-                          <span className="text-[10px] text-slate-300 font-medium italic select-none">Sin acciones</span>
+                          <span className="text-xs text-slate-400 select-none">—</span>
                         )}
                       </td>
                     </tr>

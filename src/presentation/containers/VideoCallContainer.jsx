@@ -1,15 +1,25 @@
 // src/presentation/containers/VideoCallContainer.jsx
-import React, { useState, useEffect } from "react";
-import { useMeeting } from "@videosdk.live/react-sdk";
+import React, { useState, useEffect, useRef } from "react";
+import { useMeeting, usePubSub } from "@videosdk.live/react-sdk";
 import ParticipantGrid from "./ParticipantGrid";
-import WaitingToJoinScreen from "../screens/WaitingToJoin"; 
+import WaitingToJoinScreen from "../screens/WaitingToJoin";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Ban, PictureInPicture2, MessageSquare } from "lucide-react";
+import NetworkStats from "../components/NetworkStats";
+import DropDownCam from "../components/DropDownCam";
+import ChatPanel from "../components/ChatPanel";
 
 export default function VideoCallContainer({ meetingId, onLeave }) {
   const [error, setError] = useState(null);
-  const [micEncendido, setMicEncendido] = useState(true);
-  const [camEncendida, setCamEncendida] = useState(true);
   const [mostrarSelfView, setMostrarSelfView] = useState(true);
   const [reunionIniciada, setReunionIniciada] = useState(false);
+
+  // Estado del chat en llamada
+  const [chatAbierto, setChatAbierto] = useState(false);
+  const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0);
+  // Ref espejo para leer el estado actual dentro del callback de PubSub
+  // (el callback captura el valor del render en que se creó)
+  const chatAbiertoRef = useRef(chatAbierto);
+  chatAbiertoRef.current = chatAbierto;
 
   const {
     join,
@@ -18,26 +28,39 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
     toggleWebcam,
     participants,
     localParticipant,
+    // Estado real del SDK: única fuente de verdad para mic y cámara.
+    // Evita que la UI se desincronice si un toggle falla (permisos, cámara ocupada, etc.)
+    localMicOn,
+    localWebcamOn,
   } = useMeeting({
     onMeetingJoined: () => {
-      console.log("🍏 Conexión establecida: El usuario ingresó a la sala.");
       setReunionIniciada(true);
     },
     onMeetingLeft: () => {
-      console.log("🔴 Consulta VITA terminada");
       if (onLeave) onLeave();
     },
     onError: (error) => {
-      console.error("❌ Error registrado en VideoSDK:", error);
+      console.error("Error registrado en VideoSDK:", error);
       setError(error.message || "Error en la interconexión de videollamada");
     },
   });
 
+  // Canal de chat sobre la infraestructura PubSub de VideoSDK:
+  // no requiere backend adicional. persist:true hace que quien entre tarde
+  // reciba el historial de mensajes de la sesión.
+  const { publish, messages } = usePubSub("CHAT", {
+    onMessageReceived: (mensaje) => {
+      // Cuenta como "no leído" solo si el panel está cerrado y el mensaje es ajeno
+      if (!chatAbiertoRef.current && mensaje.senderId !== localParticipant?.id) {
+        setMensajesNoLeidos((c) => c + 1);
+      }
+    },
+  });
+
   useEffect(() => {
-    // Agregamos un pequeño delay de 500ms para evitar la condición de carrera con el Provider
+    // Pequeño delay para evitar la condición de carrera con el MeetingProvider
     const timer = setTimeout(() => {
       if (meetingId) {
-        console.log("🚀 Uniendo de forma segura a la sala:", meetingId);
         join();
       } else {
         setError("El identificador de la sala (meetingId) es inválido o no fue recibido.");
@@ -49,20 +72,22 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
       try {
         leave();
       } catch (e) {
-        console.log("Meeting ya cerrado al desmontar.");
+        // La reunión ya estaba cerrada al desmontar: no es un error real
       }
     };
   }, [meetingId]);
 
-  // Obtenemos los participantes activos en la llamada
+  // Participantes activos en la llamada
   const participantIds = Array.from(participants.keys());
 
   if (error) {
     return (
       <div className="p-8 bg-slate-900 text-white rounded-2xl min-h-[400px] flex flex-col items-center justify-center m-4 border border-rose-500/20">
-        <span className="text-4xl mb-4">🚫</span>
+        <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-full mb-4">
+          <Ban className="w-8 h-8 text-rose-400" />
+        </div>
         <h3 className="text-lg font-bold">Error en Telemedicina</h3>
-        <p className="text-sm text-slate-400 mt-2">{error}</p>
+        <p className="text-sm text-slate-400 mt-2 text-center max-w-sm">{error}</p>
         <button onClick={() => window.location.reload()} className="mt-4 bg-sky-500 hover:bg-sky-600 text-white px-6 py-2 rounded-xl text-sm font-bold transition">
           Reintentar Conexión
         </button>
@@ -78,11 +103,15 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
           <h2 className="text-sm font-black text-white tracking-tight uppercase">Consulta Médica VITA</h2>
           <p className="text-[10px] font-mono text-slate-400">Sala ID: {meetingId || "Cargando..."}</p>
         </div>
-        <div className="flex items-center gap-2 bg-sky-500/10 px-3 py-1 rounded-full border border-sky-500/20">
-          <span className={`w-2 h-2 rounded-full ${reunionIniciada ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}></span>
-          <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">
-            {reunionIniciada ? "En Vivo" : "Conectando"}
-          </span>
+        <div className="flex items-center gap-2">
+          {/* Indicador de calidad de red (solo tiene sentido con la reunión activa) */}
+          {reunionIniciada && <NetworkStats />}
+          <div className="flex items-center gap-2 bg-sky-500/10 px-3 py-1 rounded-full border border-sky-500/20">
+            <span className={`w-2 h-2 rounded-full ${reunionIniciada ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}></span>
+            <span className="text-[10px] font-bold text-sky-400 tracking-wider uppercase">
+              {reunionIniciada ? "En Vivo" : "Conectando"}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -91,15 +120,14 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
         {reunionIniciada && participantIds.length > 0 ? (
           <ParticipantGrid participantIds={participantIds} />
         ) : (
-          /* 🍏 Reemplazado de forma limpia por tu componente de radar animado profesional */
-          <WaitingToJoinScreen 
-            nombreSala={meetingId} 
-            onCancel={() => window.location.reload()} 
+          <WaitingToJoinScreen
+            nombreSala={meetingId}
+            onCancel={() => window.location.reload()}
           />
         )}
 
-        {/* Vista previa del médico/usuario local (Self View) */}
-        {mostrarSelfView && localParticipant && localParticipant.webcamOn && (
+        {/* Vista previa local (Self View) */}
+        {mostrarSelfView && localParticipant && localWebcamOn && (
           <div
             className="absolute bottom-4 right-4 w-32 h-24 md:w-40 md:h-28 bg-slate-950 rounded-xl border-2 border-sky-500/40 shadow-2xl overflow-hidden cursor-pointer group z-20 transition-all hover:border-sky-500"
             onClick={() => setMostrarSelfView(false)}
@@ -108,15 +136,24 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
             <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-slate-900/90 to-transparent p-1.5 flex justify-between items-center z-30">
               <span className="text-[8px] font-black text-sky-400 tracking-wider uppercase">Tú</span>
               <div className="flex gap-1">
-                <span className={`w-1.5 h-1.5 rounded-full ${micEncendido ? "bg-emerald-500" : "bg-rose-500"}`} />
-                <span className={`w-1.5 h-1.5 rounded-full ${camEncendida ? "bg-emerald-500" : "bg-rose-500"}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${localMicOn ? "bg-emerald-500" : "bg-rose-500"}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${localWebcamOn ? "bg-emerald-500" : "bg-rose-500"}`} />
               </div>
             </div>
             <video
               ref={(ref) => {
                 if (ref && localParticipant?.webcamStream) {
-                  ref.srcObject = localParticipant.webcamStream;
-                  ref.play().catch((e) => console.log("Stream preview bloqueado:", e));
+                  const stream = localParticipant.webcamStream;
+                  // Defensivo: el webcamStream de VideoSDK puede ser un envoltorio
+                  // con .track en lugar de un MediaStream nativo
+                  const mediaStream = stream instanceof MediaStream
+                    ? stream
+                    : new MediaStream([stream.track]);
+                  ref.srcObject = mediaStream;
+                  ref.play().catch(() => {
+                    // Autoplay bloqueado por el navegador: el usuario ya interactuó
+                    // en el lobby, así que en la práctica no debería ocurrir
+                  });
                 }
               }}
               autoPlay
@@ -126,27 +163,70 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
             />
           </div>
         )}
+
+        {/* Botón para restaurar el self-view cuando está oculto */}
+        {!mostrarSelfView && localWebcamOn && (
+          <button
+            onClick={() => setMostrarSelfView(true)}
+            className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-1.5 bg-slate-950/80 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2 rounded-xl transition backdrop-blur-sm"
+            title="Mostrar tu vista previa"
+          >
+            <PictureInPicture2 className="w-3.5 h-3.5" />
+            Mostrar mi cámara
+          </button>
+        )}
+
+        {/* Panel de chat en llamada */}
+        {chatAbierto && (
+          <ChatPanel
+            mensajes={messages}
+            onEnviar={(texto) => publish(texto, { persist: true })}
+            onClose={() => setChatAbierto(false)}
+            localParticipantId={localParticipant?.id}
+          />
+        )}
       </div>
 
       {/* Controles de la llamada */}
       <div className="flex flex-wrap gap-2 justify-center border-t border-slate-800 pt-3 z-10">
         <button
-          onClick={async () => { await toggleMic(); setMicEncendido(!micEncendido); }}
-          className={`px-4 py-2 rounded-xl text-xs font-bold border transition ${micEncendido ? "bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" : "bg-rose-600 border-rose-500 text-white"}`}
+          onClick={() => toggleMic()}
+          aria-label={localMicOn ? "Silenciar micrófono" : "Activar micrófono"}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition ${localMicOn ? "bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" : "bg-rose-600 border-rose-500 text-white"}`}
         >
-          {micEncendido ? "🎙️ Micrófono" : "🔇 Silenciado"}
+          {localMicOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+          {localMicOn ? "Micrófono" : "Silenciado"}
         </button>
         <button
-          onClick={async () => { await toggleWebcam(); setCamEncendida(!camEncendida); }}
-          className={`px-4 py-2 rounded-xl text-xs font-bold border transition ${camEncendida ? "bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" : "bg-rose-600 border-rose-500 text-white"}`}
+          onClick={() => toggleWebcam()}
+          aria-label={localWebcamOn ? "Apagar cámara" : "Encender cámara"}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition ${localWebcamOn ? "bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" : "bg-rose-600 border-rose-500 text-white"}`}
         >
-          {camEncendida ? "📷 Cámara" : "🚫 Video Apagado"}
+          {localWebcamOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+          {localWebcamOn ? "Cámara" : "Video Apagado"}
+        </button>
+        {/* Selector de dispositivo de cámara (visible solo con la webcam encendida) */}
+        {localWebcamOn && <DropDownCam />}
+        <button
+          onClick={() => { setChatAbierto(prev => !prev); setMensajesNoLeidos(0); }}
+          aria-label={chatAbierto ? "Cerrar chat" : "Abrir chat"}
+          className={`relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition ${chatAbierto ? "bg-sky-600 border-sky-500 text-white" : "bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200"}`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          Chat
+          {/* Contador de mensajes no leídos */}
+          {mensajesNoLeidos > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-slate-900">
+              {mensajesNoLeidos > 9 ? "9+" : mensajesNoLeidos}
+            </span>
+          )}
         </button>
         <button
-          onClick={() => { leave(); }}
-          className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-6 py-2 rounded-xl transition shadow-lg shadow-rose-900/20"
+          onClick={() => leave()}
+          className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-6 py-2 rounded-xl transition shadow-lg shadow-rose-900/20"
         >
-          🔴 Terminar Consulta
+          <PhoneOff className="w-4 h-4" />
+          Terminar Consulta
         </button>
       </div>
     </div>

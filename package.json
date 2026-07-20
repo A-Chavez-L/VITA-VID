@@ -14,7 +14,7 @@
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.108.1",
     "@videosdk.live/react-sdk": "^0.12.6",
-    "lucide-react": "^1.17.0",
+    "lucide-react": "^1.25.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-player": "^3.4.0",
