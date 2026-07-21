@@ -4,12 +4,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './presentation/screens/Login';
 import Dashboard from './presentation/screens/Dashboard';
 import UnirseSala from "./presentation/screens/UnirseSala";
+import LlamadaExterna from "./presentation/screens/LlamadaExterna";
 import { supabase } from './data/supabaseClient';
 
 export default function App() {
   const [session, setSession] = useState(null);
   const [medicoDatos, setMedicoDatos] = useState(null);
-  // Evita el "flash" de la pantalla de Login mientras se verifica la sesión guardada
   const [verificandoSesion, setVerificandoSesion] = useState(true);
 
   const fetchMedicoDatos = async (userId) => {
@@ -25,7 +25,6 @@ export default function App() {
       if (data) {
         setMedicoDatos(data);
       } else {
-        // Aprovisionamiento perezoso: primer inicio de sesión sin perfil registrado
         const userEmail = (await supabase.auth.getUser()).data.user?.email;
         const nombreInicial = userEmail ? userEmail.split('@')[0] : 'Médico';
 
@@ -49,17 +48,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Verificación inicial de la sesión persistida
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchMedicoDatos(session.user.id);
       setVerificandoSesion(false);
     });
 
-    // Única fuente de verdad para los cambios de autenticación:
-    // se dispara en login, logout y refresh de token. Centralizar aquí
-    // evita la doble carga (y doble inserción) del perfil que ocurría
-    // cuando Login también seteaba la sesión manualmente.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
@@ -72,7 +66,6 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Splash mínimo mientras se restaura la sesión (evita mostrar Login a un usuario autenticado)
   if (verificandoSesion) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -87,10 +80,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta pública para pacientes (debe coincidir con el enlace de CompartirEnlace) */}
+        {/* Ruta para la llamada en ventana externa */}
+        <Route path="/llamada" element={<LlamadaExterna />} />
+
+        {/* Ruta pública para pacientes */}
         <Route path="/unirse/:meetingId" element={<UnirseSala />} />
 
-        {/* Ruta principal: autenticado → Dashboard; sin sesión → Login */}
         <Route
           path="/"
           element={
@@ -101,14 +96,11 @@ export default function App() {
                 refrescarPerfil={() => session && fetchMedicoDatos(session.user.id)}
               />
             ) : (
-              // onAuthStateChange detecta el inicio de sesión y actualiza todo;
-              // Login no necesita setear la sesión manualmente
-              <Login onLogin={() => { /* gestionado por onAuthStateChange */ }} />
+              <Login onLogin={() => {}} />
             )
           }
         />
 
-        {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
