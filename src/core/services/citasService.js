@@ -1,7 +1,7 @@
 // src/core/services/citasService.js
 import { citasRepository } from '../../data/repositories/citasRepository';
 
-const LONGITUD_MAXIMA_NOTA = 2000;
+const LONGITUD_MAXIMA_NOTA = 5000; // Aumentado para notas médicas más detalladas
 
 export const citasService = {
   async agendarCitaMedica(medicoId, datosCita) {
@@ -45,7 +45,6 @@ export const citasService = {
     return true;
   },
 
-  // Nombre unificado para evitar errores de tipo en las pantallas receptoras
   async validarAccesoASala(citaId) {
     if (!citaId) throw new Error("El ID de la cita es requerido.");
     const citaIdTexto = String(citaId).trim();
@@ -55,7 +54,6 @@ export const citasService = {
     return cita;
   },
 
-  // Sincronizado para alternar estados de forma opcional (Pendiente o En progreso)
   async asociarMeetingACita(citaId, meetingId, nuevoEstado = null) {
     if (!citaId || !meetingId) throw new Error("Faltan parámetros requeridos.");
     const { data, error } = await citasRepository.actualizarMeetingId(citaId, meetingId, nuevoEstado);
@@ -63,15 +61,9 @@ export const citasService = {
     return data;
   },
 
-  /**
-   * Cambia el estado de la cita al cierre de la teleconsulta.
-   * Acepta opcionalmente una nota clínica (resumen/indicaciones del médico)
-   * que se registra junto con la resolución.
-   */
   async cambiarEstadoCita(citaId, nuevoEstado, notaClinica = null) {
     if (!citaId || !nuevoEstado) throw new Error("Faltan parámetros para cambiar el estado.");
 
-    // Normalización y validación de la nota en la capa de servicio
     let notaLimpia = null;
     if (typeof notaClinica === 'string' && notaClinica.trim().length > 0) {
       notaLimpia = notaClinica.trim();
@@ -81,6 +73,37 @@ export const citasService = {
     }
 
     const { data, error } = await citasRepository.actualizarEstadoCita(citaId, nuevoEstado, notaLimpia);
+    if (error) throw error;
+    return data;
+  },
+
+  // Nuevo método para guardar notas médicas
+  async guardarNotaMedica(citaId, notaMedica, diagnostico = null, tratamiento = null) {
+    if (!citaId) throw new Error("El ID de la cita es requerido.");
+    if (!notaMedica || notaMedica.trim().length === 0) {
+      throw new Error("La nota médica no puede estar vacía.");
+    }
+
+    const notaLimpia = notaMedica.trim();
+    if (notaLimpia.length > LONGITUD_MAXIMA_NOTA) {
+      throw new Error(`La nota médica no puede superar los ${LONGITUD_MAXIMA_NOTA} caracteres.`);
+    }
+
+    const { data, error } = await citasRepository.guardarNotaMedica(
+      citaId,
+      notaLimpia,
+      diagnostico ? diagnostico.trim() : null,
+      tratamiento ? tratamiento.trim() : null
+    );
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Obtener todas las citas con notas médicas
+  async obtenerCitasConNotas(medicoId) {
+    if (!medicoId) throw new Error("El ID del médico es requerido.");
+    const { data, error } = await citasRepository.obtenerCitasConNotas(medicoId);
     if (error) throw error;
     return data;
   }

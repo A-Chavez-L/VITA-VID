@@ -3,14 +3,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useMeeting, usePubSub } from "@videosdk.live/react-sdk";
 import ParticipantGrid from "./ParticipantGrid";
 import WaitingToJoinScreen from "../screens/WaitingToJoin";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Ban, PictureInPicture2, MessageSquare } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Ban, MessageSquare } from "lucide-react";
 import NetworkStats from "../components/NetworkStats";
 import DropDownCam from "../components/DropDownCam";
 import ChatPanel from "../components/ChatPanel";
 
 export default function VideoCallContainer({ meetingId, onLeave }) {
   const [error, setError] = useState(null);
-  const [mostrarSelfView, setMostrarSelfView] = useState(true);
   const [reunionIniciada, setReunionIniciada] = useState(false);
 
   // Estado del chat en llamada
@@ -124,56 +123,6 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
             nombreSala={meetingId}
             onCancel={() => window.location.reload()}
           />
-        )}
-
-        {/* Vista previa local (Self View) */}
-        {mostrarSelfView && localParticipant && localWebcamOn && (
-          <div
-            className="absolute bottom-4 right-4 w-32 h-24 md:w-40 md:h-28 bg-slate-950 rounded-xl border-2 border-sky-500/40 shadow-2xl overflow-hidden cursor-pointer group z-20 transition-all hover:border-sky-500"
-            onClick={() => setMostrarSelfView(false)}
-            title="Haz clic para ocultar tu vista previa"
-          >
-            <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-slate-900/90 to-transparent p-1.5 flex justify-between items-center z-30">
-              <span className="text-[8px] font-black text-sky-400 tracking-wider uppercase">Tú</span>
-              <div className="flex gap-1">
-                <span className={`w-1.5 h-1.5 rounded-full ${localMicOn ? "bg-emerald-500" : "bg-rose-500"}`} />
-                <span className={`w-1.5 h-1.5 rounded-full ${localWebcamOn ? "bg-emerald-500" : "bg-rose-500"}`} />
-              </div>
-            </div>
-            <video
-              ref={(ref) => {
-                if (ref && localParticipant?.webcamStream) {
-                  const stream = localParticipant.webcamStream;
-                  // Defensivo: el webcamStream de VideoSDK puede ser un envoltorio
-                  // con .track en lugar de un MediaStream nativo
-                  const mediaStream = stream instanceof MediaStream
-                    ? stream
-                    : new MediaStream([stream.track]);
-                  ref.srcObject = mediaStream;
-                  ref.play().catch(() => {
-                    // Autoplay bloqueado por el navegador: el usuario ya interactuó
-                    // en el lobby, así que en la práctica no debería ocurrir
-                  });
-                }
-              }}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full object-cover scale-x-[-1]"
-            />
-          </div>
-        )}
-
-        {/* Botón para restaurar el self-view cuando está oculto */}
-        {!mostrarSelfView && localWebcamOn && (
-          <button
-            onClick={() => setMostrarSelfView(true)}
-            className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-1.5 bg-slate-950/80 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2 rounded-xl transition backdrop-blur-sm"
-            title="Mostrar tu vista previa"
-          >
-            <PictureInPicture2 className="w-3.5 h-3.5" />
-            Mostrar mi cámara
-          </button>
         )}
 
         {/* Panel de chat en llamada */}
