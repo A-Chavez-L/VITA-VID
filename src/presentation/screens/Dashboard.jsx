@@ -5,6 +5,8 @@ import ProgramarCitas from './ProgramarCitas';
 import HistorialCitas from './HistorialCitas';
 import Configuracion from './Configuracion';
 import CompartirEnlace from "../components/CompartirEnlace";
+import ReportePaciente from '../components/ReportePaciente';
+import EstadisticasMensuales from '../components/EstadisticasMensuales';
 import { MeetingProvider } from "@videosdk.live/react-sdk";
 import VideoCallContainer from "../containers/VideoCallContainer";
 import LeaveScreen from "./LeaveScreen";
@@ -22,10 +24,12 @@ import {
   AlertTriangle,
   Info,
   X,
+  FileText,
+  BarChart3,
   ExternalLink,
 } from 'lucide-react';
 
-// Configuración centralizada del sistema de toasts (estilo + etiqueta en español)
+// Configuración centralizada del sistema de toasts
 const ESTILOS_TOAST = {
   success: { clases: 'bg-emerald-50 border-emerald-200 text-emerald-800', etiqueta: 'Éxito',  Icono: CheckCircle2, colorIcono: 'text-emerald-500' },
   error:   { clases: 'bg-rose-50 border-rose-200 text-rose-800',           etiqueta: 'Error',  Icono: XCircle,      colorIcono: 'text-rose-500' },
@@ -33,25 +37,27 @@ const ESTILOS_TOAST = {
   info:    { clases: 'bg-sky-50 border-sky-200 text-sky-800',              etiqueta: 'Info',   Icono: Info,          colorIcono: 'text-sky-500' },
 };
 
-// Definición de la navegación lateral en un solo lugar (evita repetir markup)
+// Navegación lateral
 const OPCIONES_NAV = [
-  { id: 'dashboard', etiqueta: 'Dashboard',          Icono: LayoutDashboard },
-  { id: 'citas',     etiqueta: 'Programar Citas',    Icono: CalendarPlus },
+  { id: 'dashboard', etiqueta: 'Dashboard', Icono: LayoutDashboard },
+  { id: 'citas', etiqueta: 'Programar Citas', Icono: CalendarPlus },
   { id: 'historial', etiqueta: 'Historial de Citas', Icono: FolderClock },
-  { id: 'config',    etiqueta: 'Configuración',      Icono: Settings },
+  { id: 'reportes', etiqueta: 'Reportes', Icono: FileText },
+  { id: 'estadisticas', etiqueta: 'Estadísticas', Icono: BarChart3 },
+  { id: 'config', etiqueta: 'Configuración', Icono: Settings },
 ];
 
 export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
   const [pestanaActiva, setPestanaActiva] = useState('dashboard');
   const [toast, setToast] = useState({ mostrar: false, mensaje: '', tipo: 'success' });
-  const [llamadaActiva, setLlamadaActiva] = useState({ activa: false, meetingId: null });
+  const [llamadaActiva, setLlamadaActiva] = useState({ activa: false, meetingId: null, citaId: null });
   const [citaIdActiva, setCitaIdActiva] = useState(null);
   const [isMeetingLeft, setIsMeetingLeft] = useState(false);
   const [videoToken, setVideoToken] = useState(null);
   const [modalInvitacion, setModalInvitacion] = useState({ mostrar: false, meetingId: null, pacienteNombre: '' });
-  // Nueva ventana de llamada
   const [ventanaLlamada, setVentanaLlamada] = useState(null);
   const [modoVentanaExterna, setModoVentanaExterna] = useState(false);
+  const [fechaLlamadaInicio, setFechaLlamadaInicio] = useState(null);
 
   const lanzarAlerta = (mensaje, tipo = 'success') => {
     setToast({ mostrar: true, mensaje, tipo });
@@ -73,18 +79,21 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
   // Escuchar mensajes de la ventana de llamada
   useEffect(() => {
     const handleMessage = (event) => {
-      // Verificar origen por seguridad
       if (event.data?.type === 'VIDEO_CALL_CLOSED') {
-        setLlamadaActiva({ activa: false, meetingId: null });
+        setLlamadaActiva({ activa: false, meetingId: null, citaId: null });
         setIsMeetingLeft(false);
         setCitaIdActiva(null);
         setModoVentanaExterna(false);
         setVentanaLlamada(null);
+        setFechaLlamadaInicio(null);
         lanzarAlerta("La videollamada ha finalizado", "info");
       }
       if (event.data?.type === 'VIDEO_CALL_READY') {
-        // La ventana de llamada está lista
         setModoVentanaExterna(true);
+      }
+      if (event.data?.type === 'VIDEO_CALL_STATS') {
+        // Recibir estadísticas de la llamada
+        console.log('Estadísticas de llamada recibidas:', event.data.stats);
       }
     };
 
@@ -97,14 +106,12 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
     return medico.nombre_completo || "Médico VITA";
   };
 
-  // Función para abrir la llamada en nueva ventana
   const abrirLlamadaEnVentana = (citaId, meetingId, pacienteNombre) => {
     const ancho = 1200;
     const alto = 800;
     const izquierda = (window.screen.width - ancho) / 2;
     const arriba = (window.screen.height - alto) / 2;
 
-    // Construir URL con parámetros
     const url = `${window.location.origin}/llamada?meetingId=${meetingId}&citaId=${citaId}&paciente=${encodeURIComponent(pacienteNombre)}&medico=${encodeURIComponent(obtenerNombreParticipante())}`;
 
     const nuevaVentana = window.open(
@@ -115,11 +122,11 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
 
     if (nuevaVentana) {
       setVentanaLlamada(nuevaVentana);
-      setLlamadaActiva({ activa: true, meetingId });
+      setLlamadaActiva({ activa: true, meetingId, citaId });
       setCitaIdActiva(citaId);
       setModoVentanaExterna(true);
+      setFechaLlamadaInicio(new Date());
 
-      // Guardar referencia en localStorage para reconexión
       localStorage.setItem('vita_llamada_activa', JSON.stringify({
         citaId,
         meetingId,
@@ -154,7 +161,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
         }
       }
 
-      // Abrir en nueva ventana
       abrirLlamadaEnVentana(citaId, idSalaReal, pacienteNombre);
       lanzarAlerta("Conexión establecida con éxito.", "success");
 
@@ -198,7 +204,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
     }
   };
 
-  // Procesa la resolución final tomada por el médico en el LeaveScreen
   const manejarFinalizacionCita = async (nuevoEstado, notaClinica = null) => {
     if (citaIdActiva) {
       try {
@@ -210,11 +215,11 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
       }
     }
 
-    // Limpieza integral de llamadas inactivas
-    setLlamadaActiva({ activa: false, meetingId: null });
+    setLlamadaActiva({ activa: false, meetingId: null, citaId: null });
     setIsMeetingLeft(false);
     setCitaIdActiva(null);
     setModoVentanaExterna(false);
+    setFechaLlamadaInicio(null);
     localStorage.removeItem('vita_llamada_activa');
 
     if (ventanaLlamada && !ventanaLlamada.closed) {
@@ -223,15 +228,13 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
     setVentanaLlamada(null);
   };
 
-  // Verificar si hay una llamada activa guardada al cargar
   useEffect(() => {
     const llamadaGuardada = localStorage.getItem('vita_llamada_activa');
     if (llamadaGuardada) {
       try {
         const data = JSON.parse(llamadaGuardada);
-        // Verificar si la llamada sigue activa (menos de 4 horas)
         if (Date.now() - data.timestamp < 4 * 60 * 60 * 1000) {
-          setLlamadaActiva({ activa: true, meetingId: data.meetingId });
+          setLlamadaActiva({ activa: true, meetingId: data.meetingId, citaId: data.citaId });
           setCitaIdActiva(data.citaId);
           setModoVentanaExterna(true);
         } else {
@@ -248,21 +251,14 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
       return <div className="p-6 text-center text-slate-500 font-medium">Sincronizando perfil profesional...</div>;
     }
 
-    // Si hay una llamada activa, mostrar un overlay o indicador
     if (llamadaActiva.activa && modoVentanaExterna) {
-      // Mostrar el contenido normal pero con un indicador de llamada activa
       return (
         <>
-          {/* Banner de llamada activa */}
           <div className="bg-sky-50 border-b border-sky-200 p-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-sm font-medium text-sky-800">
-                📹 Videollamada en curso
-              </span>
-              <span className="text-xs text-sky-600">
-                (ID: {llamadaActiva.meetingId})
-              </span>
+              <span className="text-sm font-medium text-sky-800">📹 Videollamada en curso</span>
+              <span className="text-xs text-sky-600">(ID: {llamadaActiva.meetingId})</span>
             </div>
             <div className="flex gap-2">
               <button
@@ -270,7 +266,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
                   if (ventanaLlamada && !ventanaLlamada.closed) {
                     ventanaLlamada.focus();
                   } else {
-                    // Reabrir la ventana
                     const llamadaGuardada = localStorage.getItem('vita_llamada_activa');
                     if (llamadaGuardada) {
                       const data = JSON.parse(llamadaGuardada);
@@ -288,9 +283,10 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
                   if (ventanaLlamada && !ventanaLlamada.closed) {
                     ventanaLlamada.close();
                   }
-                  setLlamadaActiva({ activa: false, meetingId: null });
+                  setLlamadaActiva({ activa: false, meetingId: null, citaId: null });
                   setCitaIdActiva(null);
                   setModoVentanaExterna(false);
+                  setFechaLlamadaInicio(null);
                   localStorage.removeItem('vita_llamada_activa');
                   lanzarAlerta("Llamada finalizada", "info");
                 }}
@@ -301,8 +297,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
               </button>
             </div>
           </div>
-
-          {/* Contenido normal */}
           {pestanaActiva === 'dashboard' && (
             <HomeDashboard
               medico={medico}
@@ -313,12 +307,24 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
           )}
           {pestanaActiva === 'citas' && <ProgramarCitas medico={medico} lanzarAlerta={lanzarAlerta} />}
           {pestanaActiva === 'historial' && <HistorialCitas medico={medico} lanzarAlerta={lanzarAlerta} />}
+          {pestanaActiva === 'reportes' && (
+            <ReportePaciente 
+              medico={medico}
+              onClose={() => setPestanaActiva('dashboard')}
+              lanzarAlerta={lanzarAlerta}
+            />
+          )}
+          {pestanaActiva === 'estadisticas' && (
+            <EstadisticasMensuales 
+              medico={medico}
+              lanzarAlerta={lanzarAlerta}
+            />
+          )}
           {pestanaActiva === 'config' && <Configuracion medico={medico} onProfileUpdate={refrescarPerfil} lanzarAlerta={lanzarAlerta} />}
         </>
       );
     }
 
-    // Llamada en modo embebido (sin ventana externa)
     if (llamadaActiva.activa) {
       if (!videoToken) {
         return <div className="p-6 text-center text-slate-500 font-medium">Cargando módulo de videollamada...</div>;
@@ -344,7 +350,10 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
           ) : (
             <VideoCallContainer
               meetingId={llamadaActiva.meetingId}
+              citaId={llamadaActiva.citaId}
               onLeave={() => setIsMeetingLeft(true)}
+              fechaInicio={fechaLlamadaInicio}
+              lanzarAlerta={lanzarAlerta}
             />
           )}
         </MeetingProvider>
@@ -363,6 +372,19 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
         )}
         {pestanaActiva === 'citas' && <ProgramarCitas medico={medico} lanzarAlerta={lanzarAlerta} />}
         {pestanaActiva === 'historial' && <HistorialCitas medico={medico} lanzarAlerta={lanzarAlerta} />}
+        {pestanaActiva === 'reportes' && (
+          <ReportePaciente 
+            medico={medico}
+            onClose={() => setPestanaActiva('dashboard')}
+            lanzarAlerta={lanzarAlerta}
+          />
+        )}
+        {pestanaActiva === 'estadisticas' && (
+          <EstadisticasMensuales 
+            medico={medico}
+            lanzarAlerta={lanzarAlerta}
+          />
+        )}
         {pestanaActiva === 'config' && <Configuracion medico={medico} onProfileUpdate={refrescarPerfil} lanzarAlerta={lanzarAlerta} />}
       </>
     );
@@ -373,7 +395,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 relative">
 
-      {/* Sistema Toast */}
       {toast.mostrar && (
         <div
           role="status"
@@ -396,7 +417,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
         </div>
       )}
 
-      {/* Modal Compartir Enlace */}
       {modalInvitacion.mostrar && (
         <CompartirEnlace
           meetingId={modalInvitacion.meetingId}
@@ -405,7 +425,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
         />
       )}
 
-      {/* Sidebar de Navegación (fijo) */}
       <aside className="w-64 bg-white border-r border-slate-100 p-4 flex flex-col justify-between select-none shrink-0">
         <div className="space-y-6">
           <div className="flex items-center gap-2 px-2 py-4">
@@ -438,7 +457,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
         </button>
       </aside>
 
-      {/* Contenedor Principal */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="bg-white border-b border-slate-100 p-4 flex justify-between items-center px-8 select-none shrink-0">
           <div className="text-xs text-slate-500 font-black tracking-widest uppercase">HOSPITAL SAN GABRIEL</div>
