@@ -172,17 +172,17 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
         doc.setFillColor(30, 41, 59);
         doc.rect(0, paginaAlto - 15, 210, 15, 'F');
 
-        // Franja de acento superior del footer Sky-600
+        
         doc.setFillColor(2, 132, 199);
         doc.rect(0, paginaAlto - 15, 210, 1, 'F');
 
-        // Texto legal o institucional en el footer
+        
         doc.setTextColor(226, 232, 240);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.text('Este documento es un reporte automatizado generado por la intranet del Hospital San Gabriel. Todos los datos están protegidos.', 15, paginaAlto - 6);
 
-        // Guardado automático
+        
         const nombreArchivo = `Reporte_Estadisticas_${new Date().toISOString().split('T')[0]}.pdf`;
         doc.save(nombreArchivo);
         lanzarAlerta('Reporte en PDF generado correctamente con membrete institucional', 'success');
