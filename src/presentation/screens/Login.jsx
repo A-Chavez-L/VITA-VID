@@ -1,9 +1,7 @@
-// src/presentation/screens/Login.jsx
 import React, { useState } from 'react';
 import { User, Lock, Activity, Eye, EyeOff, AlertTriangle, Loader2 } from 'lucide-react';
 import { authService } from '../../core/services/authService';
 
-// Logos institucionales (verificar que la ruta coincida con /src/assets)
 import logoVita from '../../assets/logo-vita.jpeg';
 import logoHospital from '../../assets/logo-hospital.jpeg';
 
@@ -29,7 +27,6 @@ export default function Login({ onLogin }) {
     } catch (error) {
       lanzarAlertaLocal(error.message || "Credenciales incorrectas", 'error');
     } finally {
-      // El finally garantiza que los inputs siempre se liberen, incluso tras un error
       setLoading(false);
     }
   };
@@ -44,7 +41,6 @@ export default function Login({ onLogin }) {
         </div>
       )}
 
-      {/* LADO IZQUIERDO: Logo de VITA */}
       <div className="hidden md:flex w-1/3 justify-center items-center">
         <img
           src={logoVita}
@@ -53,7 +49,6 @@ export default function Login({ onLogin }) {
         />
       </div>
 
-      {/* CENTRO: Formulario de Login */}
       <div className="w-full md:w-1/3 flex justify-center items-center z-10">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
           <div className="flex flex-col items-center mb-6">
@@ -98,7 +93,6 @@ export default function Login({ onLogin }) {
                   required
                   disabled={loading}
                 />
-                {/* Alternar visibilidad de la contraseña */}
                 <button
                   type="button"
                   onClick={() => setMostrarPassword(prev => !prev)}
@@ -123,7 +117,6 @@ export default function Login({ onLogin }) {
         </div>
       </div>
 
-      {/* LADO DERECHO: Logo del Hospital */}
       <div className="hidden md:flex w-1/3 justify-center items-center">
         <img
           src={logoHospital}

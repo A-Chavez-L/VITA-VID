@@ -1,4 +1,3 @@
-// src/data/repositories/citasRepository.js
 import { supabase } from '../supabaseClient';
 
 export const citasRepository = {
@@ -57,7 +56,6 @@ export const citasRepository = {
       .select();
   },
 
-  // Nuevo método para guardar/actualizar notas médicas
   async guardarNotaMedica(citaId, notaMedica, diagnostico = null, tratamiento = null) {
     const idLimpio = String(citaId).trim();
     const updateData = {
@@ -80,7 +78,6 @@ export const citasRepository = {
       .select();
   },
 
-  // Obtener todas las citas con notas médicas
   async obtenerCitasConNotas(medicoId) {
     return await supabase
       .from('citas')

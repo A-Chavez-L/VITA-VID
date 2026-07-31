@@ -1,9 +1,7 @@
-// src/presentation/screens/ProgramarCitas.jsx
 import React, { useState } from 'react';
 import { citasService } from '../../core/services/citasService';
 import { CalendarPlus, Loader2 } from 'lucide-react';
 
-// Clase compartida para todos los campos: consistencia visual y de foco en un solo lugar
 const CLASE_CAMPO = "w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition-all";
 const CLASE_LABEL = "block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1";
 
@@ -17,7 +15,6 @@ export default function ProgramarCitas({ medico, lanzarAlerta }) {
   const [hora, setHora] = useState('');
   const [cargando, setCargando] = useState(false);
 
-  // Fecha mínima permitida: hoy (evita agendar citas en el pasado)
   const hoyISO = (() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -51,7 +48,6 @@ export default function ProgramarCitas({ medico, lanzarAlerta }) {
   };
 
   return (
-    // Wrapper con padding: da aire entre el header y la tarjeta del formulario
     <div className="p-6">
       <form onSubmit={guardarCita} className="space-y-5 max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <h3 className="text-base font-black text-slate-800 tracking-tight border-b border-slate-100 pb-3 flex items-center gap-2">

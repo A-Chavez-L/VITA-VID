@@ -1,19 +1,12 @@
-// src/presentation/containers/ParticipantGrid.jsx
 import React, { useState, useEffect } from "react";
 import ParticipantView from "../components/ParticipantView";
 
-// Evita re-renderizar cada tile cuando cambia la lista completa de participantes:
-// cada ParticipantView se suscribe internamente a su propio participante vía el SDK,
-// así que solo necesita re-renderizarse si cambia su participantId.
 const MemoizedParticipant = React.memo(
   ParticipantView,
   (prevProps, nextProps) => prevProps.participantId === nextProps.participantId
 );
 
-/**
- * Hook reactivo de media query: escucha los cambios de tamaño/orientación,
- * no solo el valor inicial (bug común: rotar el teléfono no reorganizaba el grid).
- */
+
 function useEsMovil() {
   const [esMovil, setEsMovil] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches
@@ -23,8 +16,6 @@ function useEsMovil() {
     const mediaQuery = window.matchMedia("(max-width: 768px)");
     const actualizar = (e) => setEsMovil(e.matches);
 
-    // addEventListener es el API moderno; addListener queda como respaldo
-    // para navegadores móviles antiguos
     if (mediaQuery.addEventListener) {
       mediaQuery.addEventListener("change", actualizar);
       return () => mediaQuery.removeEventListener("change", actualizar);
@@ -40,7 +31,6 @@ function useEsMovil() {
 export default function ParticipantGrid({ participantIds }) {
   const esMovil = useEsMovil();
 
-  // Columnas por fila: en móvil 1 (o 2 si hay más de 2 personas); en desktop 1 solo o 2
   const perRow = esMovil
     ? (participantIds.length <= 2 ? 1 : 2)
     : (participantIds.length === 1 ? 1 : 2);
@@ -64,7 +54,6 @@ export default function ParticipantGrid({ participantIds }) {
                 <MemoizedParticipant participantId={id} />
               </div>
             ))}
-            {/* Relleno para mantener el ancho uniforme cuando la última fila está incompleta */}
             {rowParticipants.length < perRow &&
               Array.from({ length: perRow - rowParticipants.length }).map((_, i) => (
                 <div key={`empty-${i}`} className="flex-1" />

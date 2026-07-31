@@ -1,4 +1,3 @@
-// src/presentation/components/ParticipantView.jsx
 import React, { useEffect, useRef } from "react";
 import { useParticipant, VideoPlayer } from "@videosdk.live/react-sdk";
 import { MicOff } from "lucide-react";
@@ -9,7 +8,7 @@ const ParticipantAudioPlayer = ({ participantId }) => {
 
   useEffect(() => {
     if (micRef.current) {
-      if (micOn && micStream && !isLocal) { // No reproducimos el audio local para evitar feedback/eco
+      if (micOn && micStream && !isLocal) { 
         const mediaStream = new MediaStream();
         mediaStream.addTrack(micStream.track);
         micRef.current.srcObject = mediaStream;
@@ -24,7 +23,6 @@ const ParticipantAudioPlayer = ({ participantId }) => {
       }
     }
 
-    // Limpieza al desmontar: libera la referencia al stream de audio
     return () => {
       if (micRef.current) {
         micRef.current.srcObject = null;
@@ -32,14 +30,13 @@ const ParticipantAudioPlayer = ({ participantId }) => {
     };
   }, [micStream, micOn, isLocal]);
 
-  // Si es el participante local, no renderizamos el elemento de audio
   if (isLocal) return null;
 
   return (
     <audio
       ref={micRef}
       autoPlay
-      playsInline // Crucial para iOS Safari y Android Chrome
+      playsInline 
       controls={false}
       style={{ display: "none" }}
     />
@@ -54,10 +51,8 @@ export default function ParticipantView({ participantId }) {
   return (
     <div className="h-full w-full bg-slate-950 relative overflow-hidden rounded-xl flex items-center justify-center min-h-[200px] border border-slate-800 shadow-inner flex-1">
 
-      {/* Reproductor de Audio (solo participantes remotos) */}
       <ParticipantAudioPlayer participantId={participantId} />
 
-      {/* Renderizado de Video */}
       {webcamOn ? (
         <div className="w-full h-full">
           <VideoPlayer
@@ -85,14 +80,11 @@ export default function ParticipantView({ participantId }) {
         </div>
       )}
 
-      {/* Etiqueta con el Nombre y estado de audio */}
       <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-slate-950/80 backdrop-blur-md border border-slate-800/60 px-3 py-1.5 rounded-full shadow-lg z-10">
         <span className={`w-1.5 h-1.5 rounded-full ${webcamOn ? "bg-emerald-500" : "bg-slate-500"}`}></span>
         <span className="text-white text-xs font-bold tracking-tight">
           {isLocal ? `${displayName} (Tú)` : displayName}
         </span>
-        {/* Indicador de micrófono silenciado: clave en telemedicina para
-            diagnosticar de un vistazo el clásico "no me escucha" */}
         {!micOn && (
           <span
             className="flex items-center justify-center bg-rose-500/20 border border-rose-500/40 rounded-full p-1"

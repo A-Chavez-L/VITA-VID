@@ -1,4 +1,3 @@
-// src/presentation/screens/HomeDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../../data/supabaseClient";
 import {
@@ -19,7 +18,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
   const [porcentajeEficiencia, setPorcentajeEficiencia] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [confirmarCancelacion, setConfirmarCancelacion] = useState({ mostrar: false, citaId: null, pacienteNombre: '' });
-  // Estado auxiliar para forzar el re-render de la inminencia cada minuto sin mutar citasHoy
   const [, setMinutoActual] = useState(new Date());
 
   const cargarMetricasDashboard = async () => {
@@ -83,7 +81,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
     momentoCita.setHours(horas, minutos, 0, 0);
 
     const diferenciaMinutos = (momentoCita - ahora) / (1000 * 60);
-    // Margen amplio: desde 15 minutos antes hasta 2 horas después de la hora pautada
     return diferenciaMinutos <= 15 && diferenciaMinutos >= -120;
   };
 
@@ -91,7 +88,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
     if (!medico?.id) return;
     cargarMetricasDashboard();
 
-    // Actualiza el reloj local cada minuto para refrescar la inminencia de las citas
     const intervaloTiempo = setInterval(() => {
       setMinutoActual(new Date());
     }, 60000);
@@ -112,10 +108,8 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
   const citasFiltradas = citasHoy.filter(cita => filtroModalidad === 'Todas' ? true : cita.modalidad === filtroModalidad);
 
   return (
-    // El padre (Dashboard) ya controla altura, fondo y scroll: aquí solo padding y espaciado
     <div className="p-6 space-y-6 relative">
 
-      {/* Modal para Confirmar Cancelación */}
       {confirmarCancelacion.mostrar && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xl max-w-sm w-full space-y-4 mx-4 animate-scale-in">
@@ -144,7 +138,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
         </div>
       )}
 
-      {/* Banner de Bienvenida */}
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
         <h1 className="text-2xl font-bold text-slate-800">
           Bienvenido, {medico?.nombre_completo || 'Médico'}
@@ -152,7 +145,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
         <p className="text-sm text-slate-500 mt-1">Aquí tienes un resumen de tu actividad médica para el día de hoy.</p>
       </div>
 
-      {/* Grid de Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-sky-50 text-sky-600 rounded-xl">
@@ -188,7 +180,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
         </div>
       </div>
 
-      {/* Listado de Citas */}
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3">
           <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -268,7 +259,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
                         {estaActivaOActiva ? (
                           <div className="flex items-center justify-center gap-1.5">
 
-                            {/* 1. Botón de Acción Principal Dinámico */}
                             {inminente ? (
                               <button
                                 onClick={() => iniciarLlamada(cita.id, cita.paciente_nombre)}
@@ -284,9 +274,7 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
                               </span>
                             )}
 
-                            {/* 2. Barra Compacta de Herramientas y Estados */}
                             <div className="flex items-center bg-slate-50 border border-slate-100 p-0.5 rounded-lg">
-                              {/* Compartir Enlace (Solo disponible si es virtual e inminente) */}
                               {inminente && (
                                 <button
                                   onClick={() => mostrarSoloEnlace(cita.id, cita.paciente_nombre)}
@@ -298,7 +286,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
                                 </button>
                               )}
 
-                              {/* Completar Consulta Rápido */}
                               <button
                                 onClick={() => cambiarEstadoCita(cita.id, 'Completada')}
                                 className="hover:bg-emerald-50 text-emerald-600 p-1.5 rounded-md transition"
@@ -308,7 +295,6 @@ export default function HomeDashboard({ medico, lanzarAlerta, iniciarLlamada, mo
                                 <Check className="w-3.5 h-3.5" strokeWidth={3} />
                               </button>
 
-                              {/* Cancelar Consulta Rápido */}
                               <button
                                 onClick={() => setConfirmarCancelacion({ mostrar: true, citaId: cita.id, pacienteNombre: cita.paciente_nombre })}
                                 className="hover:bg-rose-50 text-rose-600 p-1.5 rounded-md transition"

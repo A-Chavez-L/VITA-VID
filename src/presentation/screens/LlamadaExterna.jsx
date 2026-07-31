@@ -1,4 +1,3 @@
-// src/presentation/screens/LlamadaExterna.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MeetingProvider } from "@videosdk.live/react-sdk";
@@ -35,12 +34,10 @@ export default function LlamadaExterna() {
     };
     cargarToken();
 
-    // Notificar a la ventana padre que la llamada está lista
     if (window.opener) {
       window.opener.postMessage({ type: 'VIDEO_CALL_READY' }, '*');
     }
 
-    // Manejar cierre de ventana
     const handleBeforeUnload = () => {
       if (window.opener) {
         window.opener.postMessage({ type: 'VIDEO_CALL_CLOSED' }, '*');
@@ -62,7 +59,6 @@ export default function LlamadaExterna() {
       }
     }
 
-    // Cerrar la ventana después de finalizar
     window.close();
   };
 

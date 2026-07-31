@@ -1,4 +1,3 @@
-// src/presentation/containers/VideoCallContainer.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useMeeting, usePubSub } from "@videosdk.live/react-sdk";
 import ParticipantGrid from "./ParticipantGrid";
@@ -7,16 +6,16 @@ import { Mic, MicOff, Video, VideoOff, PhoneOff, Ban, MessageSquare } from "luci
 import NetworkStats from "../components/NetworkStats";
 import DropDownCam from "../components/DropDownCam";
 import ChatPanel from "../components/ChatPanel";
+import { reportesService } from '../../core/services/reportesService';
 
-export default function VideoCallContainer({ meetingId, onLeave }) {
+export default function VideoCallContainer({ meetingId, citaId, onLeave, fechaInicio, lanzarAlerta }) {
   const [error, setError] = useState(null);
   const [reunionIniciada, setReunionIniciada] = useState(false);
-
-  // Estado del chat en llamada
   const [chatAbierto, setChatAbierto] = useState(false);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0);
-  // Ref espejo para leer el estado actual dentro del callback de PubSub
-  // (el callback captura el valor del render en que se creó)
+  const [fechaInicioLlamada, setFechaInicioLlamada] = useState(fechaInicio || new Date());
+  const [estadisticasGuardadas, setEstadisticasGuardadas] = useState(false);
+  
   const chatAbiertoRef = useRef(chatAbierto);
   chatAbiertoRef.current = chatAbierto;
 
@@ -27,15 +26,15 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
     toggleWebcam,
     participants,
     localParticipant,
-    // Estado real del SDK: única fuente de verdad para mic y cámara.
-    // Evita que la UI se desincronice si un toggle falla (permisos, cámara ocupada, etc.)
     localMicOn,
     localWebcamOn,
   } = useMeeting({
     onMeetingJoined: () => {
       setReunionIniciada(true);
+      setFechaInicioLlamada(new Date());
     },
     onMeetingLeft: () => {
+      guardarEstadisticasLlamada();
       if (onLeave) onLeave();
     },
     onError: (error) => {
@@ -44,20 +43,74 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
     },
   });
 
-  // Canal de chat sobre la infraestructura PubSub de VideoSDK:
-  // no requiere backend adicional. persist:true hace que quien entre tarde
-  // reciba el historial de mensajes de la sesión.
   const { publish, messages } = usePubSub("CHAT", {
     onMessageReceived: (mensaje) => {
-      // Cuenta como "no leído" solo si el panel está cerrado y el mensaje es ajeno
       if (!chatAbiertoRef.current && mensaje.senderId !== localParticipant?.id) {
         setMensajesNoLeidos((c) => c + 1);
       }
     },
   });
 
+  const guardarEstadisticasLlamada = async () => {
+    if (estadisticasGuardadas || !citaId) return;
+    
+    try {
+      const ahora = new Date();
+      const duracionSegundos = Math.round((ahora - fechaInicioLlamada) / 1000);
+      
+      let calidadVideo = 'Buena';
+      let calidadAudio = 'Buena';
+      let latencia = 0;
+      let paquetesPerdidos = 0;
+      let anchoBanda = 0;
+
+      try {
+        if (localParticipant && typeof localParticipant.getVideoStats === 'function') {
+          const stats = await localParticipant.getVideoStats();
+          if (stats && stats.length > 0) {
+            const rtt = stats[0]?.rtt;
+            if (rtt !== undefined) {
+              latencia = rtt;
+              if (rtt < 150) calidadVideo = 'Excelente';
+              else if (rtt < 300) calidadVideo = 'Buena';
+              else if (rtt < 500) calidadVideo = 'Regular';
+              else calidadVideo = 'Mala';
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('No se pudieron obtener estadísticas de video:', e);
+      }
+
+      const estadisticas = {
+        cita_id: citaId,
+        fecha_inicio: fechaInicioLlamada.toISOString(),
+        fecha_fin: ahora.toISOString(),
+        duracion_segundos: duracionSegundos,
+        calidad_video: calidadVideo,
+        calidad_audio: calidadAudio,
+        latencia_promedio_ms: latencia,
+        paquetes_perdidos: paquetesPerdidos,
+        ancho_banda_kbps: anchoBanda
+      };
+
+      await reportesService.guardarEstadisticasLlamada(estadisticas);
+      setEstadisticasGuardadas(true);
+      
+      if (lanzarAlerta) {
+        lanzarAlerta(`Estadísticas de llamada guardadas (${duracionSegundos}s)`, 'success');
+      }
+      
+      console.log('Estadísticas guardadas:', estadisticas);
+    } catch (error) {
+      console.error('Error guardando estadísticas:', error);
+      if (lanzarAlerta) {
+        lanzarAlerta('Error al guardar estadísticas de la llamada', 'warning');
+      }
+    }
+  };
+
   useEffect(() => {
-    // Pequeño delay para evitar la condición de carrera con el MeetingProvider
     const timer = setTimeout(() => {
       if (meetingId) {
         join();
@@ -69,14 +122,23 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
     return () => {
       clearTimeout(timer);
       try {
+        guardarEstadisticasLlamada();
         leave();
       } catch (e) {
-        // La reunión ya estaba cerrada al desmontar: no es un error real
+        console.warn('Error al salir de la reunión:', e);
       }
     };
   }, [meetingId]);
 
-  // Participantes activos en la llamada
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && reunionIniciada) {
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [reunionIniciada]);
+
   const participantIds = Array.from(participants.keys());
 
   if (error) {
@@ -96,14 +158,15 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
 
   return (
     <div className="p-4 bg-slate-900 text-white rounded-2xl min-h-[500px] flex flex-col shadow-2xl border border-slate-800 m-4 flex-1">
-      {/* Encabezado */}
       <div className="flex justify-between items-center border-b border-slate-800 pb-3">
         <div>
           <h2 className="text-sm font-black text-white tracking-tight uppercase">Consulta Médica VITA</h2>
           <p className="text-[10px] font-mono text-slate-400">Sala ID: {meetingId || "Cargando..."}</p>
+          {citaId && (
+            <p className="text-[9px] font-mono text-slate-500">Cita ID: {citaId}</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          {/* Indicador de calidad de red (solo tiene sentido con la reunión activa) */}
           {reunionIniciada && <NetworkStats />}
           <div className="flex items-center gap-2 bg-sky-500/10 px-3 py-1 rounded-full border border-sky-500/20">
             <span className={`w-2 h-2 rounded-full ${reunionIniciada ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}></span>
@@ -114,7 +177,6 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
         </div>
       </div>
 
-      {/* Espacio Central */}
       <div className="flex-grow my-3 relative min-h-[350px] flex">
         {reunionIniciada && participantIds.length > 0 ? (
           <ParticipantGrid participantIds={participantIds} />
@@ -125,7 +187,6 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
           />
         )}
 
-        {/* Panel de chat en llamada */}
         {chatAbierto && (
           <ChatPanel
             mensajes={messages}
@@ -136,7 +197,6 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
         )}
       </div>
 
-      {/* Controles de la llamada */}
       <div className="flex flex-wrap gap-2 justify-center border-t border-slate-800 pt-3 z-10">
         <button
           onClick={() => toggleMic()}
@@ -154,7 +214,6 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
           {localWebcamOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
           {localWebcamOn ? "Cámara" : "Video Apagado"}
         </button>
-        {/* Selector de dispositivo de cámara (visible solo con la webcam encendida) */}
         {localWebcamOn && <DropDownCam />}
         <button
           onClick={() => { setChatAbierto(prev => !prev); setMensajesNoLeidos(0); }}
@@ -163,7 +222,6 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
         >
           <MessageSquare className="w-4 h-4" />
           Chat
-          {/* Contador de mensajes no leídos */}
           {mensajesNoLeidos > 0 && (
             <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-slate-900">
               {mensajesNoLeidos > 9 ? "9+" : mensajesNoLeidos}
@@ -171,7 +229,10 @@ export default function VideoCallContainer({ meetingId, onLeave }) {
           )}
         </button>
         <button
-          onClick={() => leave()}
+          onClick={() => {
+            guardarEstadisticasLlamada();
+            leave();
+          }}
           className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-6 py-2 rounded-xl transition shadow-lg shadow-rose-900/20"
         >
           <PhoneOff className="w-4 h-4" />

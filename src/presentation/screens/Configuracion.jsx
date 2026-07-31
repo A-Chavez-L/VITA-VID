@@ -1,9 +1,7 @@
-// src/presentation/screens/Configuracion.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from "../../data/supabaseClient";
 import { UserRound, Camera, AlertTriangle, Loader2 } from 'lucide-react';
 
-// Mismas constantes de estilo que ProgramarCitas: un solo sistema de diseño en toda la app
 const CLASE_CAMPO = "w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition-all";
 const CLASE_LABEL = "block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1";
 
@@ -17,7 +15,6 @@ export default function Configuracion({ medico, onProfileUpdate, lanzarAlerta })
   const [guardando, setGuardando] = useState(false);
   const inputArchivoRef = useRef(null);
 
-  // Sincronizar el estado interno cuando los datos del médico carguen
   useEffect(() => {
     if (medico) {
       setNombre(medico.nombre_completo || '');
@@ -53,7 +50,6 @@ export default function Configuracion({ medico, onProfileUpdate, lanzarAlerta })
     const file = e.target.files[0];
     if (!file || !medico?.id) return;
 
-    // Validación en la capa de presentación antes de gastar la subida
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
       lanzarAlerta("Solo se permiten imágenes JPG o PNG.", "warning");
       return;
@@ -69,7 +65,6 @@ export default function Configuracion({ medico, onProfileUpdate, lanzarAlerta })
     const fileName = `${medico.id}-${Date.now()}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
 
-    // 1. Subida al Bucket de Supabase Storage
     let { error: uploadError } = await supabase.storage
       .from('vita-assets')
       .upload(filePath, file);
@@ -80,10 +75,8 @@ export default function Configuracion({ medico, onProfileUpdate, lanzarAlerta })
       return;
     }
 
-    // 2. Traer la URL Pública generada
     const { data } = supabase.storage.from('vita-assets').getPublicUrl(filePath);
 
-    // 3. Registrar la URL en la tabla del médico
     const { error: updateError } = await supabase
       .from('perfiles_medicos')
       .update({ avatar_url: data.publicUrl })
@@ -104,7 +97,6 @@ export default function Configuracion({ medico, onProfileUpdate, lanzarAlerta })
         <h2 className="text-xl font-bold text-slate-800 mb-6">Mi Perfil Profesional</h2>
         <form onSubmit={guardarCambios} className="space-y-5">
 
-          {/* Avatar editable */}
           <div className="flex items-center gap-4 mb-4">
             <div className="relative shrink-0">
               {medico?.avatar_url ? (
@@ -114,14 +106,12 @@ export default function Configuracion({ medico, onProfileUpdate, lanzarAlerta })
                   className="w-16 h-16 rounded-full object-cover border border-slate-200"
                 />
               ) : (
-                // Fallback local: sin depender de servicios externos de placeholder
                 <div className="w-16 h-16 rounded-full bg-sky-100 border border-sky-200 flex items-center justify-center">
                   <UserRound className="w-7 h-7 text-sky-600" />
                 </div>
               )}
             </div>
             <div>
-              {/* Input de archivo oculto, disparado por un botón estilizado */}
               <input
                 ref={inputArchivoRef}
                 type="file"

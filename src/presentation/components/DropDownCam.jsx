@@ -1,14 +1,8 @@
-// src/presentation/components/DropDownCam.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useMeeting } from "@videosdk.live/react-sdk";
 import { Video, ChevronDown, Check } from "lucide-react";
 
-/**
- * Selector de cámara para la videollamada.
- * Reescrito con React puro + lucide-react (sin @headlessui ni @heroicons:
- * evita agregar dos dependencias para un solo dropdown).
- * Estilizado en tema oscuro para integrarse a los controles del VideoCallContainer.
- */
+
 export default function DropDownCam() {
   const [abierto, setAbierto] = useState(false);
   const [listaCamaras, setListaCamaras] = useState([]);
@@ -17,8 +11,6 @@ export default function DropDownCam() {
 
   const { webcams, changeWebcam } = useMeeting();
 
-  // Lista inicial de cámaras del sistema (los labels están disponibles
-  // porque el usuario ya otorgó permisos al entrar a la llamada)
   useEffect(() => {
     const obtenerWebcams = async () => {
       try {
@@ -26,8 +18,6 @@ export default function DropDownCam() {
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         if (videoDevices.length > 0) {
           setListaCamaras(videoDevices);
-          // Solo asigna la activa si aún no hay una elegida:
-          // no pisa la selección del usuario (bug del código original)
           setCamaraActiva(prev => prev || videoDevices[0]);
         }
       } catch (error) {
@@ -38,7 +28,6 @@ export default function DropDownCam() {
     obtenerWebcams();
   }, []);
 
-  // Sincroniza con la lista de webcams que reporta VideoSDK, preservando la selección
   useEffect(() => {
     if (webcams && Array.isArray(webcams) && webcams.length > 0) {
       setListaCamaras(webcams);
@@ -49,7 +38,6 @@ export default function DropDownCam() {
     }
   }, [webcams]);
 
-  // Cierra el menú al hacer clic fuera o presionar Escape
   useEffect(() => {
     if (!abierto) return;
 

@@ -1,4 +1,3 @@
-// src/presentation/components/CompartirEnlace.jsx
 import React, { useState } from 'react';
 import { Copy, Check, Share2, Users, X, MessageCircle, Mail, Smartphone, AlertCircle } from 'lucide-react';
 
@@ -74,7 +73,6 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
     } else if (servicio === 'outlook') {
       url = `https://outlook.live.com/mail/0/deeplink/compose?to=&subject=${subject}&body=${body}`;
     } else {
-      // Cliente local
       url = `mailto:?subject=${subject}&body=${body}`;
     }
 
@@ -115,7 +113,6 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xl max-w-sm w-full space-y-5 animate-scale-in">
 
-        {/* Cabecera del Modal */}
         <div className="flex items-center justify-between border-b border-slate-50 pb-3">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-sky-50 rounded-xl text-sky-600">
@@ -135,7 +132,6 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
           </button>
         </div>
 
-        {/* Mensaje de error */}
         {errorCompartir && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -143,7 +139,6 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
           </div>
         )}
 
-        {/* Tarjeta de Información Interna */}
         <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1">
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Paciente</p>
           <p className="text-xs font-bold text-slate-700">{pacienteNombre || 'Paciente No Asignado'}</p>
@@ -155,7 +150,6 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
           </div>
         </div>
 
-        {/* Caja de Enlace y Copiado */}
         <div className="space-y-1.5">
           <label htmlFor="enlace-paciente" className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Enlace del Paciente</label>
           <div className="flex gap-1.5">
@@ -181,7 +175,6 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
           </div>
         </div>
 
-        {/* Botón para copiar mensaje completo */}
         <button
           onClick={copiarMensajeCompleto}
           disabled={!enlaceCompleto}
@@ -191,11 +184,9 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
           Copiar mensaje completo con enlace
         </button>
 
-        {/* Integraciones con Terceros */}
         <div className="space-y-2">
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Enviar por aplicación externa</p>
           
-          {/* Menú de correo desplegable */}
           <div className="relative">
             <button
               onClick={() => setMostrarMenuCorreo(!mostrarMenuCorreo)}
@@ -233,7 +224,6 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
             )}
           </div>
 
-          {/* Botones de WhatsApp y SMS */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => compartirVia('whatsapp')}
@@ -252,7 +242,6 @@ export default function CompartirEnlace({ meetingId, pacienteNombre, onClose }) 
           </div>
         </div>
 
-        {/* Nota informativa */}
         <div className="text-[10px] text-slate-400 text-center border-t border-slate-100 pt-3 select-none leading-relaxed">
           💡 Selecciona tu servicio de correo preferido para abrirlo en una nueva pestaña.
           <br />

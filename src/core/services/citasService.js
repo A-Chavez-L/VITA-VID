@@ -1,7 +1,6 @@
-// src/core/services/citasService.js
 import { citasRepository } from '../../data/repositories/citasRepository';
 
-const LONGITUD_MAXIMA_NOTA = 5000; // Aumentado para notas médicas más detalladas
+const LONGITUD_MAXIMA_NOTA = 5000; 
 
 export const citasService = {
   async agendarCitaMedica(medicoId, datosCita) {
@@ -77,7 +76,6 @@ export const citasService = {
     return data;
   },
 
-  // Nuevo método para guardar notas médicas
   async guardarNotaMedica(citaId, notaMedica, diagnostico = null, tratamiento = null) {
     if (!citaId) throw new Error("El ID de la cita es requerido.");
     if (!notaMedica || notaMedica.trim().length === 0) {
@@ -100,7 +98,6 @@ export const citasService = {
     return data;
   },
 
-  // Obtener todas las citas con notas médicas
   async obtenerCitasConNotas(medicoId) {
     if (!medicoId) throw new Error("El ID del médico es requerido.");
     const { data, error } = await citasRepository.obtenerCitasConNotas(medicoId);
