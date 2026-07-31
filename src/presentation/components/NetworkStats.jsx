@@ -1,12 +1,6 @@
-// src/presentation/components/NetworkStats.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useMeeting } from "@videosdk.live/react-sdk";
 
-/**
- * Indicador de calidad de conexión basado en RTT (latencia de ida y vuelta).
- * Umbrales: < 150ms = BUENA | 150-300ms = REGULAR | > 300ms = MALA
- * Mientras no exista una medición real, muestra MIDIENDO (no asume calidad).
- */
 const ESTILOS_CALIDAD = {
   MIDIENDO: { capa: "bg-slate-700 text-slate-300 border-slate-600/40", punto: "bg-slate-400", ping: "bg-slate-400" },
   BUENA:    { capa: "bg-emerald-500 text-emerald-100 border-emerald-400/20", punto: "bg-emerald-200", ping: "bg-emerald-300" },
@@ -18,7 +12,6 @@ export default function NetworkStats() {
   const [calidadConexion, setCalidadConexion] = useState("MIDIENDO");
   const statsIntervalIdRef = useRef(null);
 
-  // Información del participante local directamente del core del meeting
   const { localParticipant } = useMeeting();
 
   const actualizarMetricas = async () => {
@@ -27,7 +20,7 @@ export default function NetworkStats() {
         const stats = await localParticipant.getVideoStats();
 
         if (stats && stats.length > 0) {
-          const rtt = stats[0]?.rtt; // Latencia de ida y vuelta en milisegundos
+          const rtt = stats[0]?.rtt; 
 
           if (rtt === undefined || rtt === null) return;
 
@@ -41,8 +34,6 @@ export default function NetworkStats() {
         }
       }
     } catch (error) {
-      // Silencioso: las métricas pueden no estar listas en los primeros segundos
-      // de la llamada; el badge simplemente permanece en su último estado válido.
     }
   };
 
@@ -51,7 +42,6 @@ export default function NetworkStats() {
       actualizarMetricas();
 
       if (statsIntervalIdRef.current) clearInterval(statsIntervalIdRef.current);
-      // Consulta en background cada 3 segundos
       statsIntervalIdRef.current = setInterval(actualizarMetricas, 3000);
     }
 

@@ -9,6 +9,6 @@
   "outputDirectory": "dist",
   "env": {
     "VITE_SUPABASE_URL": "https://tusupabase.supabase.co",
-    "VITE_SUPABASE_ANON_KEY": "tu_anon_key_aqui"
+    "VITE_SUPABASE_ANON_KEY": "sb_publishable_M8prmqzV4y4dWj-zeGz_Kw_UjHOJtmg"
   }
 }

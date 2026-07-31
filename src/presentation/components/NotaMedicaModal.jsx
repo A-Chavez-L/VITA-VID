@@ -1,4 +1,3 @@
-// src/presentation/components/NotaMedicaModal.jsx
 import React, { useState, useEffect } from 'react';
 import { X, Save, FileText, Stethoscope, Pill } from 'lucide-react';
 import { citasService } from '../../core/services/citasService';
@@ -46,7 +45,6 @@ export default function NotaMedicaModal({ cita, onClose, onGuardado, lanzarAlert
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-5 animate-scale-in">
 
-        {/* Cabecera */}
         <div className="flex items-center justify-between border-b border-slate-50 pb-3">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-sky-50 rounded-xl text-sky-600">
@@ -68,9 +66,7 @@ export default function NotaMedicaModal({ cita, onClose, onGuardado, lanzarAlert
           </button>
         </div>
 
-        {/* Formulario de Nota */}
         <div className="space-y-4">
-          {/* Diagnóstico */}
           <div>
             <label htmlFor="diagnostico" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <Stethoscope className="w-3.5 h-3.5" />
@@ -86,7 +82,6 @@ export default function NotaMedicaModal({ cita, onClose, onGuardado, lanzarAlert
             />
           </div>
 
-          {/* Tratamiento */}
           <div>
             <label htmlFor="tratamiento" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <Pill className="w-3.5 h-3.5" />
@@ -102,7 +97,6 @@ export default function NotaMedicaModal({ cita, onClose, onGuardado, lanzarAlert
             />
           </div>
 
-          {/* Nota médica */}
           <div>
             <label htmlFor="nota" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5" />
@@ -122,7 +116,6 @@ export default function NotaMedicaModal({ cita, onClose, onGuardado, lanzarAlert
           </div>
         </div>
 
-        {/* Botones de acción */}
         <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
           <button
             onClick={onClose}

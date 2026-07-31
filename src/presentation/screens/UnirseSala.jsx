@@ -1,4 +1,3 @@
-// src/presentation/screens/UnirseSala.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MeetingProvider } from "@videosdk.live/react-sdk";
@@ -9,7 +8,6 @@ import { supabase } from '../../data/supabaseClient';
 import { Ban, Stethoscope, HeartPulse, CheckCircle2, Video } from 'lucide-react';
 
 export default function UnirseSala() {
-  // react-router-dom mapea el parámetro exacto según App.jsx (:meetingId)
   const { meetingId } = useParams();
   const navigate = useNavigate();
 
@@ -18,12 +16,10 @@ export default function UnirseSala() {
   const [token, setToken] = useState(null);
   const [meetingIdReal, setMeetingIdReal] = useState(null);
 
-  // Estados para el Lobby adaptado a móviles
   const [nombrePaciente, setNombrePaciente] = useState('');
   const [confirmarIngreso, setConfirmarIngreso] = useState(false);
   const [requiereNombreManual, setRequiereNombreManual] = useState(false);
   const [esperandoMedico, setEsperandoMedico] = useState(false);
-  // Pantalla post-llamada del paciente (evita crash al colgar: antes no había onLeave)
   const [llamadaTerminada, setLlamadaTerminada] = useState(false);
 
   useEffect(() => {
@@ -39,7 +35,6 @@ export default function UnirseSala() {
         const esNumeroCita = /^\d+$/.test(meetingId);
 
         if (esNumeroCita) {
-          // Caso A: Viene el ID numérico de la cita de Supabase
           const cita = await citasService.validarAccesoASala(meetingId);
 
           if (cita) {
@@ -53,7 +48,6 @@ export default function UnirseSala() {
             if (cita.meeting_id) {
               meetingIdFinal = cita.meeting_id;
             } else {
-              // El médico no ha iniciado la videollamada aún: activamos canal Realtime
               setEsperandoMedico(true);
               setCargando(false);
 
@@ -69,8 +63,6 @@ export default function UnirseSala() {
                   },
                   async (payload) => {
                     if (payload.new && payload.new.meeting_id) {
-                      // Manejo de errores dentro del callback: si el token falla,
-                      // el paciente recibe un mensaje en vez de quedar atrapado esperando
                       try {
                         const tokenVideo = await getToken();
                         setToken(tokenVideo);
@@ -86,13 +78,12 @@ export default function UnirseSala() {
                 )
                 .subscribe();
 
-              return; // Pausamos la ejecución hasta recibir el evento
+              return;
             }
           } else {
             throw new Error("La cita médica especificada no existe en el sistema.");
           }
         } else {
-          // Caso B: Viene el código de sala directo de VideoSDK (con guiones)
           meetingIdFinal = meetingId;
           setRequiereNombreManual(true);
         }
@@ -113,7 +104,6 @@ export default function UnirseSala() {
 
     validarYConectar();
 
-    // Limpieza del canal Realtime al desmontar el componente
     return () => {
       if (canalRealtime) {
         supabase.removeChannel(canalRealtime);
@@ -151,7 +141,6 @@ export default function UnirseSala() {
     );
   }
 
-  // PANTALLA POST-LLAMADA DEL PACIENTE (simple: sin resolución de cita, eso es del médico)
   if (llamadaTerminada) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white">
@@ -177,7 +166,6 @@ export default function UnirseSala() {
     );
   }
 
-  // PANTALLA DE ESPERA REACTIVA EN TIEMPO REAL
   if (esperandoMedico) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white">
@@ -209,8 +197,6 @@ export default function UnirseSala() {
     );
   }
 
-  // LOBBY INTERMEDIO: Captura la interacción obligatoria del usuario móvil
-  // (los navegadores exigen un gesto del usuario antes de activar cámara/micrófono)
   if (!confirmarIngreso) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white">
@@ -260,7 +246,6 @@ export default function UnirseSala() {
     );
   }
 
-  // CONEXIÓN EN VIVO MULTIMEDIA
   return (
     <MeetingProvider
       config={{

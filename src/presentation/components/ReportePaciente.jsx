@@ -1,4 +1,3 @@
-// src/presentation/components/ReportePaciente.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { 
     FileText, 
@@ -104,11 +103,9 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
             format: 'a4'
         });
 
-        // Función reutilizable para pintar el membrete y pie de página en CADA hoja
         const pintarDisenoInstitucional = (pdf) => {
             const paginaAlto = pdf.internal.pageSize.height;
 
-            // --- ENCABEZADO GEOMÉTRICO ---
             pdf.setFillColor(30, 41, 59);
             pdf.rect(0, 0, 210, 30, 'F');
             
@@ -133,7 +130,6 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
             pdf.setFontSize(8);
             pdf.text('SISTEMA CLÍNICO GABRIEL v2.0', 155, 11);
 
-            // --- PIE DE PÁGINA GEOMÉTRICO ---
             pdf.setFillColor(30, 41, 59);
             pdf.rect(0, paginaAlto - 15, 210, 15, 'F');
 
@@ -149,10 +145,8 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
             pdf.text('CONFIDENCIALIDAD: Este expediente contiene datos de salud protegidos por secreto profesional. Prohibida su difusión sin autorización.', 15, paginaAlto - 6);
         };
 
-        // Pintar la primera página manualmente para los contenidos iniciales
         pintarDisenoInstitucional(doc);
 
-        // Información inicial del paciente
         doc.setTextColor(51, 65, 85);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
@@ -168,7 +162,6 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
         doc.text(`Médico Tratante: ${medico.nombre_completo || 'No especificado'}`, 19, 59);
         doc.text(`Fecha de Emisión: ${new Date().toLocaleString('es-ES')}`, 19, 65);
 
-        // TABLA 1: Estadísticas generales
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10.5);
         doc.text('Estadísticas Clínicas Generales', 15, 76);
@@ -191,12 +184,10 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
             styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.5 },
             margin: { left: 15, right: 15, top: 38, bottom: 20 },
             didDrawPage: (data) => {
-                // Si la tabla salta de página, redibuja el membrete en la nueva hoja
                 if (data.pageNumber > 1) pintarDisenoInstitucional(doc);
             }
         });
 
-        // TABLA 2: Historial cronológico (Maneja saltos automáticos fluidos)
         const siguienteY = doc.lastAutoTable.finalY + 12;
         doc.setTextColor(51, 65, 85);
         doc.setFont('helvetica', 'bold');
@@ -242,7 +233,6 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
             },
             margin: { left: 15, right: 15, top: 38, bottom: 20 },
             didDrawPage: (data) => {
-                // Redibuja el membrete institucional en cualquier página donde se pinte esta tabla
                 pintarDisenoInstitucional(doc);
             }
         });

@@ -1,4 +1,3 @@
-// src/presentation/components/EstadisticasMensuales.jsx
 import React, { useState, useEffect } from 'react';
 import { 
     Users,
@@ -60,19 +59,13 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
             format: 'a4'
         });
 
-        // ==========================================
-        // DISEÑO DE MEMBRETE INSTITUCIONAL LÍMPIO
-        // ==========================================
         
-        // Capa superior base (Gris oscuro / Azul medianoche - Slate 800)
         doc.setFillColor(30, 41, 59);
         doc.rect(0, 0, 210, 30, 'F');
         
-        // Franja de acento inferior en el encabezado (Azul rey - Sky 600)
         doc.setFillColor(2, 132, 199);
         doc.rect(0, 30, 210, 2, 'F');
 
-        // Textos del Encabezado
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(16);
@@ -82,21 +75,16 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
         doc.setFontSize(9);
         doc.text('Departamento de Analítica Médica y Control de Gestión', 15, 20);
 
-        // Marca de agua / Versión
         doc.setFontSize(8);
         doc.setTextColor(203, 213, 225);
-        doc.text('SISTEMA CLÍNICO GABRIEL v2.0', 155, 13);
+        doc.text('SistemaClínico] Hospital San Gabriel v2.0', 155, 13);
 
-        // ==========================================
-        // CUERPO DEL DOCUMENTO
-        // ==========================================
         doc.setTextColor(30, 41, 59);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(13);
         doc.text('REPORTE ESTADÍSTICO MENSUAL', 15, 45);
 
-        // Bloque de metadatos con línea vertical decorativa
-        doc.setDrawColor(2, 132, 199); // Acento Sky-600 en línea vertical
+        doc.setDrawColor(2, 132, 199); 
         doc.setLineWidth(0.7);
         doc.line(15, 50, 15, 68);
 
@@ -106,7 +94,6 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
         doc.text(`Especialidad: ${medico.especialidad || 'Ortopedia'}`, 19, 60);
         doc.text(`Período de Análisis: ${resumen.mes.toUpperCase()} / Emisión: ${new Date().toLocaleDateString('es-ES')}`, 19, 66);
 
-        // Tabla 1: Resumen de Rendimiento
         const filasResumen = [
             ['Total de Citas Gestionadas', resumen.total_citas],
             ['Tasa de Efectividad (Completadas)', `${resumen.tasa_completadas}%`],
@@ -128,7 +115,6 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
             margin: { left: 15, right: 15 }
         });
 
-        // Tabla 2: Historial Evolutivo
         const siguienteY = doc.lastAutoTable.finalY + 12;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
@@ -163,12 +149,8 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
             margin: { left: 15, right: 15 }
         });
 
-        // ==========================================
-        // PIE DE PÁGINA INSTITUCIONAL
-        // ==========================================
         const paginaAlto = doc.internal.pageSize.height;
         
-        // Base inferior fija Slate-800
         doc.setFillColor(30, 41, 59);
         doc.rect(0, paginaAlto - 15, 210, 15, 'F');
 
@@ -223,7 +205,6 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
                 }
             `}} />
 
-            {/* Cabecera */}
             <div className="flex justify-between items-center border-b border-slate-100 pb-4 print:border-b-2 print:border-slate-300 print:mb-6">
                 <div>
                     <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 print:text-2xl print:text-sky-600">
@@ -256,7 +237,6 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
                 </div>
             </div>
 
-            {/* Fichas de datos / Resumen */}
             {resumen && (
                 <div className="bg-gradient-to-r from-sky-500 to-sky-600 rounded-2xl p-6 text-white print:bg-none print:bg-slate-50 print:text-slate-900 print:border print:border-slate-300 print:rounded-xl print:p-5">
                     <div className="flex items-center justify-between mb-4">
@@ -320,7 +300,6 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
                 </div>
             )}
 
-            {/* Historial y Evolución Mensual */}
             <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm print:border-slate-300 print:shadow-none print:rounded-xl print:p-5">
                 <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2 print:text-slate-800 print:text-base print:border-b print:pb-2 print:border-slate-200">
                     <TrendingUp className="w-4 h-4 text-sky-500 print:hidden" />
@@ -373,7 +352,6 @@ export default function EstadisticasMensuales({ medico, lanzarAlerta }) {
                 )}
             </div>
 
-            {/* Consejos de Rendimiento */}
             {resumen && resumen.total_citas > 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 print:bg-white print:border-slate-300 print:rounded-xl">
                     <div className="flex items-start gap-3">

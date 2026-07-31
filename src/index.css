@@ -11,7 +11,6 @@ body {
   width: 100%;
 }
 
-/* Animación para los toasts/alertas */
 @keyframes slideUp {
   from {
     transform: translateY(100%);

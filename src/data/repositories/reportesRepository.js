@@ -1,8 +1,6 @@
-// src/data/repositories/reportesRepository.js
 import { supabase } from '../supabaseClient';
 
 export const reportesRepository = {
-    // Obtener TODOS los pacientes con sus citas
     async obtenerTodosLosPacientes(medicoId) {
         console.log('Buscando pacientes para médico:', medicoId);
         
@@ -20,7 +18,6 @@ export const reportesRepository = {
         return { data, error };
     },
 
-    // Obtener notas de un paciente específico
     async obtenerNotasPaciente(pacienteNombre, medicoId) {
         console.log('Buscando notas para:', pacienteNombre, 'médico:', medicoId);
         
@@ -55,7 +52,6 @@ export const reportesRepository = {
         return { data, error };
     },
 
-    // Obtener métricas mensuales
     async obtenerMetricasMensuales(medicoId, limite = 12) {
         const { data, error } = await supabase
             .from('metricas_mensuales')
@@ -68,7 +64,6 @@ export const reportesRepository = {
         return { data, error };
     },
 
-    // Obtener resumen del mes actual
     async obtenerResumenMesActual(medicoId) {
         const inicioMes = new Date();
         inicioMes.setDate(1);
@@ -90,7 +85,6 @@ export const reportesRepository = {
         return { data, error };
     },
 
-    // Guardar estadísticas de llamada
     async guardarEstadisticasLlamada(estadisticas) {
         const { data, error } = await supabase
             .from('estadisticas_llamadas')

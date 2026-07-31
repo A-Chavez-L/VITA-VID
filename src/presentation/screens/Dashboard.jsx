@@ -1,4 +1,3 @@
-// src/presentation/screens/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import HomeDashboard from './HomeDashboard';
 import ProgramarCitas from './ProgramarCitas';
@@ -29,7 +28,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
-// Configuración centralizada del sistema de toasts
 const ESTILOS_TOAST = {
   success: { clases: 'bg-emerald-50 border-emerald-200 text-emerald-800', etiqueta: 'Éxito',  Icono: CheckCircle2, colorIcono: 'text-emerald-500' },
   error:   { clases: 'bg-rose-50 border-rose-200 text-rose-800',           etiqueta: 'Error',  Icono: XCircle,      colorIcono: 'text-rose-500' },
@@ -37,7 +35,6 @@ const ESTILOS_TOAST = {
   info:    { clases: 'bg-sky-50 border-sky-200 text-sky-800',              etiqueta: 'Info',   Icono: Info,          colorIcono: 'text-sky-500' },
 };
 
-// Navegación lateral
 const OPCIONES_NAV = [
   { id: 'dashboard', etiqueta: 'Dashboard', Icono: LayoutDashboard },
   { id: 'citas', etiqueta: 'Programar Citas', Icono: CalendarPlus },
@@ -76,7 +73,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
     cargarToken();
   }, []);
 
-  // Escuchar mensajes de la ventana de llamada
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data?.type === 'VIDEO_CALL_CLOSED') {
@@ -92,7 +88,6 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
         setModoVentanaExterna(true);
       }
       if (event.data?.type === 'VIDEO_CALL_STATS') {
-        // Recibir estadísticas de la llamada
         console.log('Estadísticas de llamada recibidas:', event.data.stats);
       }
     };

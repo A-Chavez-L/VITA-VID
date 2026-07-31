@@ -1,8 +1,6 @@
-// src/core/services/reportesService.js
 import { reportesRepository } from '../../data/repositories/reportesRepository';
 
 export const reportesService = {
-    // Obtener lista de pacientes
     async obtenerListaPacientes(medicoId) {
         if (!medicoId) {
             console.error('ID del médico es requerido');
@@ -22,7 +20,6 @@ export const reportesService = {
                 return [];
             }
 
-            // Agrupar por paciente
             const pacientesMap = new Map();
             citas.forEach(cita => {
                 const nombre = cita.paciente_nombre;
@@ -62,7 +59,6 @@ export const reportesService = {
         }
     },
 
-    // Obtener reporte de un paciente
     async obtenerReportePaciente(pacienteNombre, medicoId) {
         if (!pacienteNombre || !medicoId) {
             console.error('Nombre del paciente y ID del médico son requeridos');
@@ -112,7 +108,6 @@ export const reportesService = {
         }
     },
 
-    // Obtener métricas mensuales
     async obtenerMetricasMensuales(medicoId) {
         if (!medicoId) return [];
 
@@ -138,7 +133,6 @@ export const reportesService = {
         }
     },
 
-    // Obtener resumen mensual
     async obtenerResumenMensual(medicoId) {
         if (!medicoId) return null;
 

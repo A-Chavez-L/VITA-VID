@@ -1,4 +1,3 @@
-// src/presentation/containers/VideoCallContainer.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useMeeting, usePubSub } from "@videosdk.live/react-sdk";
 import ParticipantGrid from "./ParticipantGrid";
@@ -35,7 +34,6 @@ export default function VideoCallContainer({ meetingId, citaId, onLeave, fechaIn
       setFechaInicioLlamada(new Date());
     },
     onMeetingLeft: () => {
-      // Guardar estadísticas antes de salir
       guardarEstadisticasLlamada();
       if (onLeave) onLeave();
     },
@@ -60,14 +58,12 @@ export default function VideoCallContainer({ meetingId, citaId, onLeave, fechaIn
       const ahora = new Date();
       const duracionSegundos = Math.round((ahora - fechaInicioLlamada) / 1000);
       
-      // Obtener estadísticas de la conexión
       let calidadVideo = 'Buena';
       let calidadAudio = 'Buena';
       let latencia = 0;
       let paquetesPerdidos = 0;
       let anchoBanda = 0;
 
-      // Intentar obtener métricas del participante local
       try {
         if (localParticipant && typeof localParticipant.getVideoStats === 'function') {
           const stats = await localParticipant.getVideoStats();
@@ -134,11 +130,9 @@ export default function VideoCallContainer({ meetingId, citaId, onLeave, fechaIn
     };
   }, [meetingId]);
 
-  // Guardar estadísticas al cambiar de pestaña
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && reunionIniciada) {
-        // La pestaña se ocultó, no hacemos nada especial
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -164,7 +158,6 @@ export default function VideoCallContainer({ meetingId, citaId, onLeave, fechaIn
 
   return (
     <div className="p-4 bg-slate-900 text-white rounded-2xl min-h-[500px] flex flex-col shadow-2xl border border-slate-800 m-4 flex-1">
-      {/* Encabezado */}
       <div className="flex justify-between items-center border-b border-slate-800 pb-3">
         <div>
           <h2 className="text-sm font-black text-white tracking-tight uppercase">Consulta Médica VITA</h2>
@@ -184,7 +177,6 @@ export default function VideoCallContainer({ meetingId, citaId, onLeave, fechaIn
         </div>
       </div>
 
-      {/* Espacio Central */}
       <div className="flex-grow my-3 relative min-h-[350px] flex">
         {reunionIniciada && participantIds.length > 0 ? (
           <ParticipantGrid participantIds={participantIds} />
@@ -205,7 +197,6 @@ export default function VideoCallContainer({ meetingId, citaId, onLeave, fechaIn
         )}
       </div>
 
-      {/* Controles de la llamada */}
       <div className="flex flex-wrap gap-2 justify-center border-t border-slate-800 pt-3 z-10">
         <button
           onClick={() => toggleMic()}

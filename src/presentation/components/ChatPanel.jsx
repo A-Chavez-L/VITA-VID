@@ -1,19 +1,11 @@
-// src/presentation/components/ChatPanel.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { X, SendHorizonal, MessageSquare } from "lucide-react";
 
-/**
- * Panel de chat durante la videoconsulta.
- * Componente presentacional: recibe los mensajes y el callback de envío
- * desde el VideoCallContainer (que maneja usePubSub de VideoSDK).
- * Funciona como canal de respaldo cuando el audio falla, y para compartir
- * texto que se dicta mal por voz (medicamentos, dosis, enlaces).
- */
+
 export default function ChatPanel({ mensajes, onEnviar, onClose, localParticipantId }) {
   const [texto, setTexto] = useState("");
   const finListaRef = useRef(null);
 
-  // Auto-scroll al último mensaje cada vez que llega uno nuevo
   useEffect(() => {
     finListaRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensajes]);
@@ -37,7 +29,7 @@ export default function ChatPanel({ mensajes, onEnviar, onClose, localParticipan
   return (
     <div className="absolute inset-y-0 right-0 z-30 w-full sm:w-80 bg-slate-900/95 backdrop-blur-md border-l border-slate-800 flex flex-col rounded-r-xl shadow-2xl animate-fade-in">
 
-      {/* Cabecera */}
+      
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 shrink-0">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-sky-400" />
@@ -52,7 +44,6 @@ export default function ChatPanel({ mensajes, onEnviar, onClose, localParticipan
         </button>
       </div>
 
-      {/* Lista de mensajes */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
         {(!mensajes || mensajes.length === 0) ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-4 select-none">
@@ -83,7 +74,6 @@ export default function ChatPanel({ mensajes, onEnviar, onClose, localParticipan
         <div ref={finListaRef} />
       </div>
 
-      {/* Caja de envío */}
       <form onSubmit={enviarMensaje} className="p-3 border-t border-slate-800 shrink-0">
         <div className="flex gap-2">
           <input

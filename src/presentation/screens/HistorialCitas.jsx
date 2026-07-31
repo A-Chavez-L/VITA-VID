@@ -1,4 +1,3 @@
-// src/presentation/screens/HistorialCitas.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../../data/supabaseClient";
 import { Search, Check, X, AlertCircle, FileText, Stethoscope, Pill, Edit } from 'lucide-react';
@@ -9,7 +8,7 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
   const [busqueda, setBusqueda] = useState('');
   const [filtroModalidad, setFiltroModalidad] = useState('Todas');
   const [filtroEstado, setFiltroEstado] = useState('Todas');
-  const [filtroNotas, setFiltroNotas] = useState('Todas'); // 'Todas', 'Con nota', 'Sin nota'
+  const [filtroNotas, setFiltroNotas] = useState('Todas'); 
   const [cargando, setCargando] = useState(true);
   const [confirmarCancelacion, setConfirmarCancelacion] = useState({ mostrar: false, citaId: null, pacienteNombre: '' });
   const [notaVisible, setNotaVisible] = useState(null);
@@ -67,12 +66,10 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
     return coincideBusqueda && coincideModalidad && coincideEstado && coincideNotas;
   });
 
-  // Función para abrir el modal de nota
   const abrirNota = (cita) => {
     setNotaVisible(cita);
   };
 
-  // Función para editar nota
   const editarNota = (cita) => {
     setNotaEditando(cita);
   };
@@ -80,7 +77,6 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
   return (
     <div className="p-6 space-y-6 relative">
 
-      {/* Modal de Nota Médica (ver) */}
       {notaVisible && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xl max-w-md w-full space-y-4">
@@ -105,7 +101,6 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
               </button>
             </div>
 
-            {/* Diagnóstico */}
             {notaVisible.diagnostico && (
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mb-1">
@@ -116,7 +111,6 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
               </div>
             )}
 
-            {/* Tratamiento */}
             {notaVisible.tratamiento && (
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mb-1">
@@ -127,7 +121,6 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
               </div>
             )}
 
-            {/* Nota */}
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 max-h-64 overflow-y-auto">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nota Clínica</p>
               <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{notaVisible.nota_medica}</p>
@@ -155,7 +148,6 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
         </div>
       )}
 
-      {/* Modal de Edición de Nota */}
       {notaEditando && (
         <NotaMedicaModal
           cita={notaEditando}
@@ -165,7 +157,6 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
         />
       )}
 
-      {/* Modal para Confirmar Cancelación */}
       {confirmarCancelacion.mostrar && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xl max-w-sm w-full space-y-4 mx-4">
@@ -179,7 +170,6 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
         </div>
       )}
 
-      {/* Encabezado */}
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Historial del Consultorio</h1>
@@ -198,9 +188,7 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
         </div>
       </div>
 
-      {/* Tabla Principal */}
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-        {/* Filtros */}
         <div className="flex flex-col sm:flex-row gap-3 justify-between">
           <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-500 w-fit">
             {['Todas', 'Virtual', 'Presencial'].map((mod) => (
@@ -269,7 +257,6 @@ export default function HistorialCitas({ medico, lanzarAlerta }) {
                               Sin cerrar
                             </span>
                           )}
-                          {/* Indicador de nota médica */}
                           {tieneNota && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-600 border border-sky-100">
                               <FileText className="w-3 h-3" />

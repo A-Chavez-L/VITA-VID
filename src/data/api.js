@@ -1,7 +1,5 @@
-// src/api.js
 const API_BASE_URL = "https://api.videosdk.live";
 
-// 🔴 PEGA AQUÍ EL TOKEN QUE COPIAS TE DE VIDEOSDK
 const VIDEOSDK_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiIxYzNiZWU0ZS0wOGJiLTQ4MTYtODVlMC03ZGFiYjc3NTBlMTUiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sInJvbGVzIjpbInJ0YyJdLCJpYXQiOjE3ODI1MjExNzksImV4cCI6MTc4NTExMzE3OX0.1QOIUeqMjoS63gfsZovT0TcsPLPP0S1ovLfC61wmQPQ";
 
 export const getToken = () => {
