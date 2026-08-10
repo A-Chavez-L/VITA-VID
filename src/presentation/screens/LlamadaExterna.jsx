@@ -5,6 +5,7 @@ import VideoCallContainer from "../containers/VideoCallContainer";
 import LeaveScreen from "./LeaveScreen";
 import { getToken } from "../../data/api";
 import { citasService } from '../../core/services/citasService';
+import { supabase } from '../../data/supabaseClient';
 
 export default function LlamadaExterna() {
   const [searchParams] = useSearchParams();
@@ -50,9 +51,44 @@ export default function LlamadaExterna() {
     };
   }, []);
 
+  // NOTIFICAR A SUPABASE QUE EL MÉDICO ENTRÓ A LA SALA
+  useEffect(() => {
+    const marcarHostConectado = async () => {
+      if (citaId) {
+        try {
+          await supabase
+            .from('citas')
+            .update({ 
+              host_conectado: true,
+              meeting_id: meetingId 
+            })
+            .eq('id', citaId);
+        } catch (err) {
+          console.error("Error marcando host_conectado:", err);
+        }
+      }
+    };
+
+    marcarHostConectado();
+
+    return () => {
+      if (citaId) {
+        supabase
+          .from('citas')
+          .update({ host_conectado: false })
+          .eq('id', citaId);
+      }
+    };
+  }, [citaId, meetingId]);
+
   const manejarFinalizacion = async (nuevoEstado, notaClinica = null) => {
     if (citaId) {
       try {
+        await supabase
+          .from('citas')
+          .update({ host_conectado: false })
+          .eq('id', citaId);
+
         await citasService.cambiarEstadoCita(citaId, nuevoEstado, notaClinica);
       } catch (error) {
         console.error("Error al actualizar el estado:", error);
@@ -110,6 +146,8 @@ export default function LlamadaExterna() {
       ) : (
         <VideoCallContainer
           meetingId={meetingId}
+          citaId={citaId}
+          esHost={true}
           onLeave={() => setIsMeetingLeft(true)}
         />
       )}
