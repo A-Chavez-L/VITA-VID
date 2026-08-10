@@ -107,7 +107,7 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
     const izquierda = (window.screen.width - ancho) / 2;
     const arriba = (window.screen.height - alto) / 2;
 
-    const url = `${window.location.origin}/llamada?meetingId=${meetingId}&citaId=${citaId}&paciente=${encodeURIComponent(pacienteNombre)}&medico=${encodeURIComponent(obtenerNombreParticipante())}`;
+    const url = `${window.location.origin}/llamada?meetingId=${meetingId}&citaId=${citaId}&paciente=${encodeURIComponent(pacienteNombre)}&medico=${encodeURIComponent(obtenerNombreParticipante())}&host=true`;
 
     const nuevaVentana = window.open(
       url,
@@ -249,13 +249,13 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
     if (llamadaActiva.activa && modoVentanaExterna) {
       return (
         <>
-          <div className="bg-sky-50 border-b border-sky-200 p-3 flex items-center justify-between">
+          <div className="bg-sky-50 border-b border-sky-200 p-3 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="text-sm font-medium text-sky-800">📹 Videollamada en curso</span>
               <span className="text-xs text-sky-600">(ID: {llamadaActiva.meetingId})</span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => {
                   if (ventanaLlamada && !ventanaLlamada.closed) {
@@ -349,6 +349,8 @@ export default function Dashboard({ medico, onLogout, refrescarPerfil }) {
               onLeave={() => setIsMeetingLeft(true)}
               fechaInicio={fechaLlamadaInicio}
               lanzarAlerta={lanzarAlerta}
+              esHost={true}
+              nombreParticipante={obtenerNombreParticipante()}
             />
           )}
         </MeetingProvider>

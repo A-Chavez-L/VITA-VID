@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import ParticipantView from "../components/ParticipantView";
 
 const MemoizedParticipant = React.memo(
@@ -6,62 +6,32 @@ const MemoizedParticipant = React.memo(
   (prevProps, nextProps) => prevProps.participantId === nextProps.participantId
 );
 
+export default function ParticipantGrid({ participantIds = [] }) {
+  // Limitar estrictamente a máximo 4 personas
+  const activeParticipants = participantIds.slice(0, 4);
+  const count = activeParticipants.length;
 
-function useEsMovil() {
-  const [esMovil, setEsMovil] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches
-  );
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 768px)");
-    const actualizar = (e) => setEsMovil(e.matches);
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener("change", actualizar);
-      return () => mediaQuery.removeEventListener("change", actualizar);
-    } else {
-      mediaQuery.addListener(actualizar);
-      return () => mediaQuery.removeListener(actualizar);
-    }
-  }, []);
-
-  return esMovil;
-}
-
-export default function ParticipantGrid({ participantIds }) {
-  const esMovil = useEsMovil();
-
-  const perRow = esMovil
-    ? (participantIds.length <= 2 ? 1 : 2)
-    : (participantIds.length === 1 ? 1 : 2);
-
-  const rows = Math.ceil(participantIds.length / perRow);
+  // Clases Grid dinámicas según el número de participantes
+  // Se fuerzan rows y cols para aprovechar todo el espacio disponible
+  const gridClasses = {
+    1: "grid-cols-1 grid-rows-1",
+    2: "grid-cols-1 md:grid-cols-2 grid-rows-2 md:grid-rows-1",
+    3: "grid-cols-1 md:grid-cols-2 grid-rows-3 md:grid-rows-2",
+    4: "grid-cols-2 grid-rows-2",
+  }[count] || "grid-cols-1 grid-rows-1";
 
   return (
-    <div className="flex flex-col w-full h-full gap-3 p-2 flex-1 overflow-y-auto">
-      {Array.from({ length: rows }, (_, rowIndex) => {
-        const start = rowIndex * perRow;
-        const end = Math.min(start + perRow, participantIds.length);
-        const rowParticipants = participantIds.slice(start, end);
-
-        return (
-          <div
-            key={`row-${rowIndex}`}
-            className="flex flex-row gap-3 w-full flex-1 min-h-[200px]"
+    <div className="w-full h-full min-h-0 flex-1 p-2 md:p-3 bg-slate-950 overflow-hidden flex items-center justify-center">
+      <div className={`grid ${gridClasses} gap-2 md:gap-3 w-full h-full max-h-full min-h-0 min-w-0`}>
+        {activeParticipants.map((id) => (
+          <div 
+            key={`participant-${id}`} 
+            className="relative w-full h-full min-h-0 min-w-0 overflow-hidden rounded-xl md:rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center"
           >
-            {rowParticipants.map((id) => (
-              <div key={`participant-${id}`} className="flex-1 min-w-0">
-                <MemoizedParticipant participantId={id} />
-              </div>
-            ))}
-            {rowParticipants.length < perRow &&
-              Array.from({ length: perRow - rowParticipants.length }).map((_, i) => (
-                <div key={`empty-${i}`} className="flex-1" />
-              ))
-            }
+            <MemoizedParticipant participantId={id} />
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
