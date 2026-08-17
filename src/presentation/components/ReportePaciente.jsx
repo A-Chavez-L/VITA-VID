@@ -87,14 +87,11 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
         setPacienteSeleccionado(null);
     };
 
-    const imprimirReporte = () => {
-        window.print();
-    };
-
-    const descargarReporte = () => {
+    // Función para generar el PDF (reutilizable)
+    const generarPDF = () => {
         if (!reporte || !pacienteSeleccionado) {
-            lanzarAlerta('No hay datos para descargar', 'warning');
-            return;
+            lanzarAlerta('No hay datos para generar el reporte', 'warning');
+            return null;
         }
 
         const doc = new jsPDF({
@@ -133,7 +130,7 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
             pdf.setFillColor(30, 41, 59);
             pdf.rect(0, paginaAlto - 15, 210, 15, 'F');
 
-            pdf.setFillColor(14, 165, 233); 
+            pdf.setFillColor(14, 165, 233);
             pdf.lines([[45, -8], [120, -8], [120, 0]], 45, paginaAlto, [1, 1], 'F');
 
             pdf.setFillColor(15, 23, 42);
@@ -224,12 +221,12 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
             head: [cabeceraNotas],
             body: filasNotas,
             theme: 'grid',
-            headStyles: { fillColor: [2, 132, 199], fontStyle: 'bold' }, 
+            headStyles: { fillColor: [2, 132, 199], fontStyle: 'bold' },
             styles: { font: 'helvetica', fontSize: 9, cellPadding: 3.5, valign: 'top' },
             columnStyles: {
-                0: { cellWidth: 30 }, 
-                1: { cellWidth: 35 }, 
-                2: { cellWidth: 'auto' } 
+                0: { cellWidth: 30 },
+                1: { cellWidth: 35 },
+                2: { cellWidth: 'auto' }
             },
             margin: { left: 15, right: 15, top: 38, bottom: 20 },
             didDrawPage: (data) => {
@@ -237,9 +234,59 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
             }
         });
 
-        const nombreArchivo = `Reporte_${pacienteSeleccionado.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-        doc.save(nombreArchivo);
-        lanzarAlerta('Reporte Clínico en PDF generado correctamente en todas sus páginas', 'success');
+        return doc;
+    };
+
+    // Función para imprimir físicamente
+    const imprimirReporte = () => {
+        try {
+            const doc = generarPDF();
+            if (!doc) return;
+
+            // Abrir en nueva ventana para imprimir
+            const pdfBlob = doc.output('blob');
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            
+            // Abrir en nueva ventana
+            const ventanaImpresion = window.open(pdfUrl, '_blank', 'width=800,height=600');
+            
+            if (ventanaImpresion) {
+                // Esperar a que cargue y luego mostrar diálogo de impresión
+                ventanaImpresion.onload = () => {
+                    setTimeout(() => {
+                        ventanaImpresion.print();
+                        // Limpiar URL después de imprimir
+                        setTimeout(() => {
+                            URL.revokeObjectURL(pdfUrl);
+                        }, 1000);
+                    }, 500);
+                };
+                lanzarAlerta('Reporte abierto para impresión física', 'success');
+            } else {
+                // Si el navegador bloquea ventanas emergentes, descargar y mostrar mensaje
+                const nombreArchivo = `Reporte_${pacienteSeleccionado.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+                doc.save(nombreArchivo);
+                lanzarAlerta('Reporte descargado - Abre el PDF y selecciona "Imprimir"', 'info');
+            }
+        } catch (error) {
+            console.error('Error al imprimir reporte:', error);
+            lanzarAlerta('Error al generar el reporte para impresión', 'error');
+        }
+    };
+
+    // Función para descargar PDF
+    const descargarReporte = () => {
+        try {
+            const doc = generarPDF();
+            if (!doc) return;
+
+            const nombreArchivo = `Reporte_${pacienteSeleccionado.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(nombreArchivo);
+            lanzarAlerta('Reporte Clínico descargado correctamente', 'success');
+        } catch (error) {
+            console.error('Error al descargar reporte:', error);
+            lanzarAlerta('Error al descargar el reporte', 'error');
+        }
     };
 
     const renderListaPacientes = () => (
@@ -321,17 +368,17 @@ export default function ReportePaciente({ medico, onClose, lanzarAlerta }) {
                 <div className="flex gap-2 justify-end print:hidden">
                     <button
                         onClick={imprimirReporte}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition"
                     >
                         <Printer className="w-3.5 h-3.5" />
-                        Imprimir
+                        Imprimir Físico
                     </button>
                     <button
                         onClick={descargarReporte}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold rounded-lg transition"
                     >
                         <Download className="w-3.5 h-3.5" />
-                        Descargar Reporte
+                        Descargar PDF
                     </button>
                 </div>
 

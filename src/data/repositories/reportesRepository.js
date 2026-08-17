@@ -92,5 +92,38 @@ export const reportesRepository = {
         
         if (error) console.error('Error en guardarEstadisticasLlamada:', error);
         return { data, error };
+    },
+
+    async obtenerTodasLasCitas(medicoId) {
+        try {
+            const { data, error } = await supabase
+                .from('citas')
+                .select('*')
+                .eq('medico_id', medicoId);
+            
+            if (error) throw error;
+            return { data, error: null };
+        } catch (error) {
+            console.error('Error en obtenerTodasLasCitas:', error);
+            return { data: null, error };
+        }
+    },
+
+    async obtenerCitasPorRango(medicoId, fechaInicio, fechaFin) {
+        try {
+            const { data, error } = await supabase
+                .from('citas')
+                .select('*')
+                .eq('medico_id', medicoId)
+                .gte('fecha', fechaInicio)
+                .lte('fecha', fechaFin)
+                .order('fecha', { ascending: false });
+
+            if (error) throw error;
+            return { data, error: null };
+        } catch (error) {
+            console.error('Error en obtenerCitasPorRango:', error);
+            return { data: null, error };
+        }
     }
 };
